@@ -16,7 +16,7 @@ function friendlyMessage(error) {
   const backendMessage = typeof candidate === 'string' && candidate.length < 240 ? candidate : ''
   if (!status) return 'The Industrial Mart API is unreachable. Check that the backend is running at the configured URL.'
   if (status === 400) return backendMessage || 'Some fields are invalid. Review the form and try again.'
-  if (status === 401) return 'The API requires authentication, which this backend prototype does not currently provide.'
+  if (status === 401) return 'Your session is missing or expired. Sign in again to continue.'
   if (status === 403) return 'The backend denied this action.'
   if (status === 404) return backendMessage || 'The requested record was not found.'
   if (status === 409 && /until.*listing fee.*paid/i.test(backendMessage)) return 'The listing fee must be successfully simulated before moderation can approve this listing.'
@@ -26,7 +26,8 @@ function friendlyMessage(error) {
 }
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  // In development Vite proxies /api to the backend, keeping browser requests same-origin.
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
   timeout: 10000,
 })
@@ -35,6 +36,17 @@ apiClient.interceptors.response.use(
   response => response,
   error => Promise.reject(new ApiError(friendlyMessage(error), error.response?.status || 0, error.code || 'API_ERROR')),
 )
+
+apiClient.interceptors.request.use(config => {
+  let storedUser = null
+  try { storedUser = JSON.parse(localStorage.getItem('im-user') || 'null') } catch { /* Ignore malformed cached session data. */ }
+  const token = localStorage.getItem('im-token') || storedUser?.token
+  if (token) {
+    if (typeof config.headers?.set === 'function') config.headers.set('Authorization', `Bearer ${token}`)
+    else config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
+  }
+  return config
+})
 
 export async function apiData(request) {
   const response = await request
