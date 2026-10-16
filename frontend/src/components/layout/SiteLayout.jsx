@@ -26,6 +26,7 @@ export default function SiteLayout() {
         <div className="header-controls"><button className="language-toggle" onClick={()=>setLanguage(language==='en'?'hi':'en')} aria-label="Switch language"><Languages size={16}/><span>{language==='en'?'हिन्दी':'English'}</span></button>{user?<button className="language-toggle logout-button" onClick={()=>{signOut();setMenuOpen(false)}}><LogOut size={15}/><span>{t('Sign out')}</span></button>:<Link className="language-toggle login-link" to="/login">{t('Log in')}</Link>}<button className="mobile-menu" aria-label="Toggle navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen?<X/>:<Menu/>}</button></div>
         <nav className={`main-nav ${menuOpen?'nav-open':''}`}>
           {links.filter(([,path])=>user&&(path==='/marketplace'||path==='/seller'&&user.role==='SELLER'||(path==='/buyer'||path==='/payments')&&user.role==='BUYER'||path==='/admin'&&user.role==='ADMIN')).map(([label, path]) => <NavLink key={path} to={path} onClick={() => setMenuOpen(false)} className={({isActive})=>isActive?'nav-link active':'nav-link'}>{t(label)}</NavLink>)}
+          {user && <button className="nav-link nav-logout" onClick={()=>{signOut();setMenuOpen(false)}}><LogOut size={15}/><span>{t('Sign out')}</span></button>}
           <span className={`api-indicator api-${apiStatus}`}><i/>{t(apiStatus === 'online' ? 'API online' : apiStatus === 'offline' ? 'API unavailable' : 'Connecting')}</span>
         </nav>
       </div>
