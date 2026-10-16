@@ -104,12 +104,12 @@ public class ListingService {
                 ));
     }
 
-    public Listing create(Listing request) {
+    public Listing create(Listing request, Long sellerUserId, String sellerName) {
         Listing listing = new Listing(
                 request.getTitle(),
                 request.getDescription(),
                 request.getCategorySlug(),
-                request.getSellerName(),
+                sellerName,
                 request.getLocation(),
                 request.getPrice(),
                 request.getCondition(),
@@ -118,24 +118,54 @@ public class ListingService {
                 LocalDateTime.now()
         );
 
+        // Set from the authenticated account, never from the request body.
+        listing.setSellerUserId(sellerUserId);
+
         return listingRepository.save(listing);
     }
 
-    public Listing update(Long id, Listing request) {
+    public Listing update(
+            Long id,
+            Listing request,
+            Long currentUserId,
+            boolean isAdmin
+    ) {
         Listing existing = getById(id);
+        verifyListingOwnership(existing, currentUserId, isAdmin);
 
         existing.setTitle(request.getTitle());
         existing.setDescription(request.getDescription());
         existing.setCategorySlug(request.getCategorySlug());
+        existing.setLocation(request.getLocation());
         existing.setPrice(request.getPrice());
         existing.setCondition(request.getCondition());
 
         return listingRepository.save(existing);
     }
 
-    public void delete(Long id) {
+    public void delete(Long id, Long currentUserId, boolean isAdmin) {
         Listing existing = getById(id);
+        verifyListingOwnership(existing, currentUserId, isAdmin);
+
         listingRepository.delete(existing);
+    }
+
+    private void verifyListingOwnership(
+            Listing listing,
+            Long currentUserId,
+            boolean isAdmin
+    ) {
+        if (isAdmin) {
+            return;
+        }
+
+        if (listing.getSellerUserId() == null
+                || !listing.getSellerUserId().equals(currentUserId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You are not allowed to modify this listing"
+            );
+        }
     }
 
     @Transactional(readOnly = true)

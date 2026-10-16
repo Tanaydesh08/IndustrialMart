@@ -1,16 +1,13 @@
-
 package com.IndustrialMart.Backend.payment;
 
+import com.IndustrialMart.Backend.listing.Listing;
+import com.IndustrialMart.Backend.listing.ListingRepository;
+import com.IndustrialMart.Backend.listing.ListingStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import com.IndustrialMart.Backend.listing.Listing;
-import com.IndustrialMart.Backend.listing.ListingRepository;
-import com.IndustrialMart.Backend.listing.ListingStatus;
-
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,6 +40,9 @@ public class PrototypePaymentService {
         this.listingRepository = listingRepository;
     }
 
+    /**
+     * Creates a listing-fee payment for a listing owned by the seller.
+     */
     @Transactional
     public PaymentTransaction createListingFeePayment(
             Long accountId,
@@ -67,6 +67,9 @@ public class PrototypePaymentService {
                         HttpStatus.NOT_FOUND,
                         "Listing not found"));
 
+        // Security: only the listing's owner can initiate its fee payment.
+        verifyListingOwnership(listing, accountId);
+
         if (listing.getStatus() == ListingStatus.APPROVED
                 || listing.getStatus() == ListingStatus.REJECTED) {
             throw new ResponseStatusException(
@@ -87,22 +90,26 @@ public class PrototypePaymentService {
                 accountId,
                 PaymentPurpose.LISTING_FEE,
                 listingFeePaise,
-                0);
+                0
+        );
 
         payment.setListingId(listingId);
 
         return paymentRepository.save(payment);
     }
 
+    /**
+     * Creates a credit-pack payment.
+     */
     @Transactional
     public PaymentTransaction createCreditPurchase(Long accountId) {
+
         validateAccount(accountId);
 
         if (packPricePaise <= 0 || packCredits <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Credit pack configuration is invalid"
-            );
+                    "Credit pack configuration is invalid");
         }
 
         walletRepository.findByAccountId(accountId)
@@ -120,25 +127,34 @@ public class PrototypePaymentService {
         return paymentRepository.save(payment);
     }
 
+    /**
+     * Simulates payment completion for the prototype.
+     */
     @Transactional
     public PaymentTransaction simulatePayment(
             Long accountId,
             Long paymentId,
             boolean success) {
+
         validateAccount(accountId);
+
+        if (paymentId == null || paymentId <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "A valid payment ID is required");
+        }
 
         PaymentTransaction payment =
                 paymentRepository.findByIdForUpdate(paymentId)
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
-                                "Payment not found"
-                        ));
+                                "Payment not found"));
 
+        // Users can only access their own payment transactions.
         if (!payment.getAccountId().equals(accountId)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Payment not found"
-            );
+                    "Payment not found");
         }
 
         // Repeated success requests must not grant credits again.
@@ -149,13 +165,13 @@ public class PrototypePaymentService {
         if (payment.getStatus() == PaymentStatus.FAILED) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "This payment has already failed"
-            );
+                    "This payment has already failed");
         }
 
         if (!success) {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setCompletedAt(LocalDateTime.now());
+
             return paymentRepository.save(payment);
         }
 
@@ -174,11 +190,24 @@ public class PrototypePaymentService {
                             HttpStatus.NOT_FOUND,
                             "Listing not found"));
 
+            // Security: verify ownership again before completing payment.
+            verifyListingOwnership(listing, accountId);
+
             if (listing.getStatus() == ListingStatus.APPROVED
                     || listing.getStatus() == ListingStatus.REJECTED) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "Listing is no longer eligible for payment");
+            }
+
+            // Prevent another successful listing-fee payment.
+            if (paymentRepository.existsByListingIdAndPurposeAndStatus(
+                    listingId,
+                    PaymentPurpose.LISTING_FEE,
+                    PaymentStatus.SUCCESS)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Listing fee has already been paid");
             }
 
             payment.setStatus(PaymentStatus.SUCCESS);
@@ -197,15 +226,13 @@ public class PrototypePaymentService {
                 walletRepository.findByAccountIdForUpdate(accountId)
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
-                                "Credit wallet not found"
-                        ));
+                                "Credit wallet not found"));
 
         // The ledger uniqueness constraint is a second safeguard.
         if (ledgerRepository.existsByPaymentId(paymentId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Credits have already been granted for this payment"
-            );
+                    "Credits have already been granted for this payment");
         }
 
         wallet.addCredits(payment.getCreditsToGrant());
@@ -221,19 +248,23 @@ public class PrototypePaymentService {
         payment.setCompletedAt(LocalDateTime.now());
 
         walletRepository.save(wallet);
+
         return paymentRepository.save(payment);
     }
 
+    /**
+     * Returns the authenticated buyer's wallet balance.
+     */
     @Transactional(readOnly = true)
     public WalletResponse getWallet(Long accountId) {
+
         validateAccount(accountId);
 
         CreditWallet wallet = walletRepository
                 .findByAccountId(accountId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Credit wallet not found"
-                ));
+                        "Credit wallet not found"));
 
         return new WalletResponse(
                 wallet.getAccountId(),
@@ -241,25 +272,45 @@ public class PrototypePaymentService {
         );
     }
 
+    /**
+     * Returns the buyer's credit ledger.
+     */
     @Transactional(readOnly = true)
     public List<CreditLedgerEntry> getLedger(Long accountId) {
+
         validateAccount(accountId);
 
         return ledgerRepository
                 .findByAccountIdOrderByCreatedAtDesc(accountId);
     }
 
+    /**
+     * Checks that the requested listing belongs to the supplied account.
+     */
+    private void verifyListingOwnership(
+            Listing listing,
+            Long accountId) {
+
+        if (listing.getSellerUserId() == null
+                || !listing.getSellerUserId().equals(accountId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You can only pay the listing fee for your own listing");
+        }
+    }
+
     private void validateAccount(Long accountId) {
+
         if (accountId == null || accountId <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "A valid prototype account ID is required"
-            );
+                    "A valid prototype account ID is required");
         }
     }
 
     public record WalletResponse(
             Long accountId,
             Integer balance
-    ) {}
+    ) {
+    }
 }

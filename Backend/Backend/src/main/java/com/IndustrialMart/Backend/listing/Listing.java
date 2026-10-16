@@ -34,6 +34,9 @@ public class Listing {
     @Column(nullable = false)
     private String sellerName;
 
+    @Column(name = "seller_user_id")
+    private Long sellerUserId;
+
     @NotBlank
     @Column(nullable = false)
     private String location;
@@ -117,5 +120,12 @@ public class Listing {
     public void setStatus(ListingStatus status) { this.status = status; }
     public void setModerationReason(String moderationReason) {
         this.moderationReason = moderationReason;
+    }
+    public Long getSellerUserId() {
+        return sellerUserId;
+    }
+
+    public void setSellerUserId(Long sellerUserId) {
+        this.sellerUserId = sellerUserId;
     }
 }

@@ -1,9 +1,15 @@
+
 package com.IndustrialMart.Backend.payment;
 
+import com.IndustrialMart.Backend.user.User;
+import com.IndustrialMart.Backend.user.UserRepository;
+import com.IndustrialMart.Backend.user.UserRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -12,26 +18,37 @@ import java.util.List;
 public class PrototypePaymentController {
 
     private final PrototypePaymentService paymentService;
+    private final UserRepository userRepository;
 
     public PrototypePaymentController(
-            PrototypePaymentService paymentService) {
+            PrototypePaymentService paymentService,
+            UserRepository userRepository
+    ) {
         this.paymentService = paymentService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/payments/credits")
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentTransaction createCreditPurchase(
-            @RequestParam Long accountId) {
-        return paymentService.createCreditPurchase(accountId);
+            Authentication authentication
+    ) {
+        User user = currentUser(authentication);
+        requireRole(user, UserRole.BUYER);
+
+        return paymentService.createCreditPurchase(user.getId());
     }
 
     @PostMapping("/payments/{paymentId}/simulate")
     public PaymentTransaction simulatePayment(
-            @RequestParam Long accountId,
+            Authentication authentication,
             @PathVariable Long paymentId,
-            @Valid @RequestBody SimulationRequest request) {
+            @Valid @RequestBody SimulationRequest request
+    ) {
+        User user = currentUser(authentication);
+
         return paymentService.simulatePayment(
-                accountId,
+                user.getId(),
                 paymentId,
                 request.success()
         );
@@ -39,29 +56,64 @@ public class PrototypePaymentController {
 
     @GetMapping("/wallet")
     public PrototypePaymentService.WalletResponse getWallet(
-            @RequestParam Long accountId) {
-        return paymentService.getWallet(accountId);
+            Authentication authentication
+    ) {
+        User user = currentUser(authentication);
+        requireRole(user, UserRole.BUYER);
+
+        return paymentService.getWallet(user.getId());
     }
 
     @GetMapping("/wallet/ledger")
     public List<CreditLedgerEntry> getLedger(
-            @RequestParam Long accountId) {
-        return paymentService.getLedger(accountId);
-    }
+            Authentication authentication
+    ) {
+        User user = currentUser(authentication);
+        requireRole(user, UserRole.BUYER);
 
-    public record SimulationRequest(
-            @NotNull Boolean success
-    ) {}
+        return paymentService.getLedger(user.getId());
+    }
 
     @PostMapping("/payments/listing-fee")
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentTransaction createListingFeePayment(
-            @RequestParam Long accountId,
-            @RequestParam Long listingId) {
+            Authentication authentication,
+            @RequestParam Long listingId
+    ) {
+        User user = currentUser(authentication);
+        requireRole(user, UserRole.SELLER);
 
         return paymentService.createListingFeePayment(
-                accountId,
+                user.getId(),
                 listingId
         );
     }
+
+    private User currentUser(Authentication authentication) {
+        if (authentication == null
+                || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authentication required"
+            );
+        }
+
+        return userRepository.findByEmailIgnoreCase(
+                authentication.getName()
+        ).orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Authenticated user not found"
+        ));
+    }
+
+    private void requireRole(User user, UserRole requiredRole) {
+        if (user.getRole() != requiredRole) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "This operation requires the " + requiredRole + " role"
+            );
+        }
+    }
+
+    public record SimulationRequest(@NotNull Boolean success) {}
 }
