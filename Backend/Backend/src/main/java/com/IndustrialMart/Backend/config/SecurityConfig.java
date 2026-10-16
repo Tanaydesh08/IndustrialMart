@@ -41,10 +41,24 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/health", "/error").permitAll()
+
+                        // Admin-only operations
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/listings/moderation/**").hasRole("ADMIN")
+
+                        // Seller-only operations
+                        .requestMatchers("/api/seller/**").hasRole("SELLER")
+
+                        // Buyer-only operations
+                        .requestMatchers("/api/prototype/buyer/**").hasRole("BUYER")
+
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
