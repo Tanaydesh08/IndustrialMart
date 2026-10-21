@@ -9,6 +9,8 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "listings")
@@ -60,6 +62,11 @@ public class Listing {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "listing_images", joinColumns = @JoinColumn(name = "listing_id"))
+    @Column(name = "image_url", nullable = false, length = 500)
+    private List<String> imageUrls = new ArrayList<>();
+
     protected Listing() {
         // Required by JPA
     }
@@ -109,6 +116,7 @@ public class Listing {
     public ListingStatus getStatus() { return status; }
     public String getModerationReason() { return moderationReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public List<String> getImageUrls() { return imageUrls; }
 
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
@@ -121,6 +129,7 @@ public class Listing {
     public void setModerationReason(String moderationReason) {
         this.moderationReason = moderationReason;
     }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
     public Long getSellerUserId() {
         return sellerUserId;
     }

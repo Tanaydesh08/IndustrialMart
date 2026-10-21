@@ -13,4 +13,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
     List<Listing> findByStatusIn(
             Collection<ListingStatus> statuses
     );
+
+    List<Listing> findTop12ByStatusOrderByCreatedAtDesc(ListingStatus status);
+    long countByStatus(ListingStatus status);
 }

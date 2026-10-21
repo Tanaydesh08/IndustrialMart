@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import SiteLayout from './components/layout/SiteLayout'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import BuyerDashboardPage from './pages/BuyerDashboardPage'
@@ -9,12 +9,12 @@ import MarketplacePage from './pages/MarketplacePage'
 import NotFoundPage from './pages/NotFoundPage'
 import SellerDashboardPage from './pages/SellerDashboardPage'
 import AuthPage from './pages/AuthPage'
-import PaymentsPage from './pages/PaymentsPage'
 import { useApp } from './context/AppContext'
 
 function Authenticated({ children }) {
   const { user } = useApp()
-  return user ? children : <Navigate to="/" replace/>
+  const location = useLocation()
+  return user ? children : <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace/>
 }
 
 export default function App() {
@@ -25,7 +25,7 @@ export default function App() {
     <Route path="/seller" element={<SellerDashboardPage/>}/>
     <Route path="/create-listing" element={<CreateListingPage/>}/>
     <Route path="/buyer" element={<BuyerDashboardPage/>}/>
-    <Route path="/payments" element={<Authenticated><PaymentsPage/></Authenticated>}/>
+    <Route path="/payments" element={<Navigate to="/buyer" replace/>}/>
     <Route path="/admin" element={<AdminDashboardPage/>}/>
     <Route path="/login" element={<AuthPage/>}/>
     <Route path="/register" element={<AuthPage register/>}/>

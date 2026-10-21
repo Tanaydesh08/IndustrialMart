@@ -96,6 +96,11 @@ public class ListingService {
     }
 
     @Transactional(readOnly = true)
+    public List<Listing> getRecent() {
+        return listingRepository.findTop12ByStatusOrderByCreatedAtDesc(ListingStatus.APPROVED);
+    }
+
+    @Transactional(readOnly = true)
     public Listing getById(Long id) {
         return listingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -141,6 +146,23 @@ public class ListingService {
         existing.setCondition(request.getCondition());
 
         return listingRepository.save(existing);
+    }
+
+    public Listing addImages(Long id, Long currentUserId, boolean isAdmin, List<String> imageUrls) {
+        Listing listing = getById(id);
+        verifyListingOwnership(listing, currentUserId, isAdmin);
+        if (listing.getImageUrls().size() + imageUrls.size() > 8) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A listing can have up to 8 photos");
+        }
+        var combined = new java.util.ArrayList<>(listing.getImageUrls());
+        combined.addAll(imageUrls);
+        listing.setImageUrls(combined);
+        return listingRepository.save(listing);
+    }
+
+    @Transactional(readOnly = true)
+    public void assertCanModify(Long id, Long currentUserId, boolean isAdmin) {
+        verifyListingOwnership(getById(id), currentUserId, isAdmin);
     }
 
     public void delete(Long id, Long currentUserId, boolean isAdmin) {

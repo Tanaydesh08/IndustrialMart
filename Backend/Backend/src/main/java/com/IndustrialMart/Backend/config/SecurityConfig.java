@@ -23,11 +23,14 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Value("${app.cors.allowed-origin:https://industrialmart-production.up.railway.app}")
+    private String productionOrigin;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -39,7 +42,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "https://industrialmart-production.up.railway.app"
+                productionOrigin,
+                "http://localhost:5173",
+                "http://127.0.0.1:5173"
         ));
 
         config.setAllowedMethods(List.of(
@@ -107,6 +112,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/health",
+                                "/api/sponsored-ads/active",
+                                "/listing-images/**",
                                 "/error"
                         ).permitAll()
 
@@ -116,7 +123,8 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
 
                         .requestMatchers(
-                                "/api/listings/moderation/**"
+                                "/api/listings/moderation/**",
+                                "/api/listings/*/moderation"
                         ).hasRole("ADMIN")
 
                         // Seller-only operations

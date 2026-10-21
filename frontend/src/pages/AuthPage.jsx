@@ -4,6 +4,7 @@ import { Factory, ShieldCheck } from 'lucide-react'
 import { login, register } from '../api/authApi'
 import { useApp } from '../context/AppContext'
 import { ErrorState } from '../components/common/States'
+import { useSearchParams } from 'react-router-dom'
 
 export default function AuthPage({ register: isRegister = false }) {
   const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'BUYER' })
@@ -11,12 +12,14 @@ export default function AuthPage({ register: isRegister = false }) {
   const [busy, setBusy] = useState(false)
   const { signIn, t } = useApp()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   async function submit(e) {
     e.preventDefault(); setBusy(true); setError('')
     try {
       const session = isRegister ? await register(form) : await login({ email: form.email, password: form.password })
       signIn(session)
-      navigate(session.role === 'ADMIN' ? '/admin' : session.role === 'SELLER' ? '/seller' : '/buyer')
+      const returnTo = searchParams.get('returnTo')
+      navigate(returnTo?.startsWith('/') ? returnTo : session.role === 'ADMIN' ? '/admin' : session.role === 'SELLER' ? '/seller' : '/buyer')
     } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
   return <section className="auth-page">

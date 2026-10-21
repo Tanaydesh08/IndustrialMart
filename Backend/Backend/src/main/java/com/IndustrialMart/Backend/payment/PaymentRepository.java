@@ -34,4 +34,20 @@ public interface PaymentRepository
             PaymentPurpose purpose,
             PaymentStatus status
     );
+
+    Optional<PaymentTransaction>
+    findFirstByAccountIdAndListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(
+            Long accountId,
+            Long listingId,
+            PaymentPurpose purpose,
+            Collection<PaymentStatus> statuses
+    );
+
+    boolean existsByAccountIdAndListingIdAndPurposeAndStatus(
+            Long accountId,
+            Long listingId,
+            PaymentPurpose purpose,
+            PaymentStatus status
+    );
+
 }

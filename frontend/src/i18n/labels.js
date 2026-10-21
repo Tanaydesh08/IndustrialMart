@@ -1,0 +1,32 @@
+// Shared labels for consistent, simple Hindi transliteration.
+export const labels = {
+  'INDUSTRIAL SUPPLY MARKETPLACE': 'Industrial Deals',
+  'Find the equipment': 'Samaan Khojein', 'that keeps work moving.': 'Industrial kaam ke liye',
+  'Browse rice mill machinery, plant equipment, spare parts and industrial services from live marketplace listings.': 'Rice mill machinery, plant equipment, spare parts aur services ke ads khojein.',
+  'Find your part of the market': 'Category chunein',
+  'Bring your equipment to the marketplace.': 'Apna samaan bechein.',
+  'Create a listing and follow its fee and moderation status through the prototype workflow.': 'Ad daalein aur uska status dekhein.',
+  'Industrial machinery and supplies marketplace.': 'Industrial samaan ke Deals',
+  'All listings': 'Saare Ads', 'Truck and commercial vehicles': 'Truck aur commercial vehicles',
+  Marketplace: 'Deals', 'Explore marketplace': 'Deals Dekhein', 'View marketplace': 'Deals Dekhein',
+  'Back to marketplace': 'Deals par wapas', 'Industrial listings': 'Industrial Ads',
+  'Create a listing': 'Naya Ad Daalein', 'Seller dashboard': 'Seller Panel',
+  'Buyer dashboard': 'Buyer Panel', 'Admin review': 'Admin Panel',
+  'Payments & ledger': 'Payments', 'Review queue': 'Jaach ke liye Ads',
+  'Approve': 'Manzoor Karein', 'Reject': 'Mana Karein',
+  'Contact Seller': 'Seller Se Baat Karein', 'View details': 'Jaankari Dekhein',
+  'My listings': 'Mere Ads', 'Recently Added': 'Naye Ads', 'Hot Deals': 'Garma-Garam Deals',
+  'Search listings': 'Samaan Khojein', 'Search listings by name or description': 'Samaan Khojein',
+  'Create account': 'Create Account', 'Sign in': 'Login', 'Log in': 'Login',
+  'Sign out': 'Logout', 'Category': 'Category', 'All categories': 'Sabhi Categories',
+  'Sign in to browse live listings': 'Ads dekhne ke liye Login karein',
+  'The marketplace listings are available to authenticated accounts.': 'Live ads dekhne ke liye apne account mein Login karein.',
+  'Sign in to continue': 'Aage badhne ke liye Login karein',
+  'No matching listings': 'Koi ad nahi mila',
+  'Try another search or category. The marketplace only shows approved listings.': 'Doosra shabd ya category khojein.',
+  'Loading listings…': 'Ads aa rahe hain…', 'Loading listing…': 'Ad khul raha hai…',
+  'Jaankari Dekhne Ke Liye ₹99 Pay Karein': 'Jaankari Dekhne Ke Liye ₹99 Pay Karein',
+  'Prototype payment: no real money is charged.': 'Yeh demo payment hai, asli paise nahi katenge.',
+}
+
+export const t = value => labels[value] || value

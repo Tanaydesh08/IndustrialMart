@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createListing } from '../api/listingApi'
+import { createListing, uploadListingImages } from '../api/listingApi'
 import { getCategories } from '../api/categoryApi'
 import { createListingFeePayment, simulatePayment } from '../api/paymentApi'
 import StatusBadge from '../components/common/StatusBadge'
@@ -20,6 +20,7 @@ export default function CreateListingPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [categoriesError, setCategoriesError] = useState('')
+  const [photos, setPhotos] = useState([])
   const { user, t } = useApp()
   useEffect(() => { getCategories().then(setCategories).catch(err=>setCategoriesError(err.message)) }, [])
 
@@ -36,7 +37,8 @@ export default function CreateListingPage() {
     if (!validate()) return
     setBusy(true); setError(''); setNotice('')
     try {
-      const created = await createListing({ ...form, price:Number(form.price) })
+      let created = await createListing({ ...form, price:Number(form.price) })
+      if (photos.length) created = await uploadListingImages(created.id, photos)
       setListing(created); setPayment(null); setNotice('Listing created. It is pending moderation and is not public yet.')
     } catch (err) { setError(err.message) }
     finally { setBusy(false) }
@@ -71,7 +73,9 @@ export default function CreateListingPage() {
       <label className="form-field"><span>{t('Category')} <b>*</b></span><select name="categorySlug" value={form.categorySlug} onChange={update}><option value="">{t('Select category')}</option>{categories.map(category=><option key={category.id} value={category.slug}>{t(category.name)}</option>)}</select>{fieldErrors.categorySlug&&<small>{fieldErrors.categorySlug}</small>}</label>
       <div className="form-grid"><Field name="sellerName" label={t('Seller / business name')} value={form.sellerName} update={update} error={fieldErrors.sellerName} required/><Field name="location" label={t('Location')} value={form.location} update={update} error={fieldErrors.location} required/></div>
       <div className="form-grid"><Field name="price" label={t('Price (INR)')} value={form.price} update={update} error={fieldErrors.price} required type="number" min="0" step="0.01"/><Field name="condition" label={t('Condition')} value={form.condition} update={update} error={fieldErrors.condition} required placeholder="e.g. NEW"/></div>
-      <button className="button button-primary" disabled={busy}>{busy?t('Saving…'):t('Create listing')}</button>
+      <label className="form-field"><span>{t('Listing photos')}</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={event=>{const chosen=Array.from(event.target.files||[]);const invalid=chosen.find(file=>file.size>5*1024*1024||!['image/jpeg','image/png','image/webp'].includes(file.type));if(invalid){setError('Photo JPG, PNG ya WEBP ho aur 5 MB se chhoti ho.');event.target.value='';return}setError('');setPhotos(current=>[...current,...chosen].slice(0,8))}}/><small>{t('8 photos tak, har ek 5 MB se kam.')}</small></label>
+      {!!photos.length&&<div className="photo-previews">{photos.map((file,index)=><div key={`${file.name}-${index}`}><img src={URL.createObjectURL(file)} alt={file.name}/><button type="button" className="button button-quiet" onClick={()=>setPhotos(current=>current.filter((_,i)=>i!==index))}>{t('Remove')}</button></div>)}</div>}
+      <button className="button button-primary" disabled={busy}>{busy?t('Saving…'):t('Naya Ad Daalein')}</button>
     </form>}
     {listing&&<div className="workflow-card"><div className="section-heading"><div><p className="eyebrow">LISTING #{listing.id}</p><h2>{t(listing.title)}</h2></div><StatusBadge status={listing.status}/></div><p>{t(listing.description)}</p><p className="listing-price">{formatINR(listing.price)}</p><p className="helper-note">{t('A newly created listing remains pending review and is not shown in the approved marketplace.')}</p>
       {!payment&&<button className="button button-primary" disabled={busy} onClick={startFee}>Initiate listing fee</button>}

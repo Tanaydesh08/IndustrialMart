@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { t as translateLabel } from '../i18n/labels'
 
 const Context = createContext(null)
 const words = {
@@ -121,7 +122,7 @@ export function AppProvider({ children }) {
   const [language, setLanguage] = useState(() => localStorage.getItem('im-language') || 'en')
   const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('im-user') || 'null') } catch { return null } })
   useEffect(() => { document.documentElement.lang = language === 'hi' ? 'hi' : 'en' }, [language])
-  const value = useMemo(() => ({ language, setLanguage: next => { localStorage.setItem('im-language', next); setLanguage(next) }, user, signIn: data => { localStorage.setItem('im-user', JSON.stringify(data)); localStorage.setItem('im-token', data.token); setUser(data) }, signOut: () => { localStorage.removeItem('im-user'); localStorage.removeItem('im-token'); setUser(null) }, t: text => language === 'hi' ? transliterate(text) : text }), [language, user])
+  const value = useMemo(() => ({ language, setLanguage: next => { localStorage.setItem('im-language', next); setLanguage(next) }, user, signIn: data => { localStorage.setItem('im-user', JSON.stringify(data)); localStorage.setItem('im-token', data.token); setUser(data) }, signOut: () => { localStorage.removeItem('im-user'); localStorage.removeItem('im-token'); setUser(null) }, t: translateLabel }), [language, user])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
 export const useApp = () => useContext(Context)

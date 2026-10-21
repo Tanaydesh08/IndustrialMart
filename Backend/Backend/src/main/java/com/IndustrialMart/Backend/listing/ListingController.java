@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/listings")
@@ -20,26 +21,42 @@ public class ListingController {
 
     private final ListingService listingService;
     private final UserRepository userRepository;
+    private final ListingImageStorage imageStorage;
 
     public ListingController(
             ListingService listingService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            ListingImageStorage imageStorage
     ) {
         this.listingService = listingService;
         this.userRepository = userRepository;
+        this.imageStorage = imageStorage;
     }
 
     @GetMapping
-    public List<Listing> getAll(
+    public List<ListingSummary> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category
     ) {
-        return listingService.getAll(search, category);
+        return listingService.getAll(search, category).stream().map(ListingSummary::from).toList();
     }
 
+    @GetMapping("/recent")
+    public List<ListingSummary> getRecent() { return listingService.getRecent().stream().map(ListingSummary::from).toList(); }
+
     @GetMapping("/{id}")
-    public Listing getById(@PathVariable Long id) {
-        return listingService.getById(id);
+    public ListingSummary getById(@PathVariable Long id) {
+        return ListingSummary.from(listingService.getById(id));
+    }
+
+    @PostMapping(value = "/{id}/images", consumes = "multipart/form-data")
+    public Listing uploadImages(Authentication authentication, @PathVariable Long id,
+                                @RequestParam("files") List<MultipartFile> files) {
+        User user = getCurrentUser(authentication);
+        boolean isAdmin = user.getRole() == UserRole.ADMIN;
+        if (!isAdmin) requireSeller(user);
+        listingService.assertCanModify(id, user.getId(), isAdmin);
+        return listingService.addImages(id, user.getId(), isAdmin, imageStorage.store(files));
     }
 
     @GetMapping("/moderation")
