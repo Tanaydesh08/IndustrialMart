@@ -65,8 +65,12 @@ public class PrototypePaymentService {
                         "You cannot purchase access to your own listing");
             }
             if (unlockRepository.existsByAccountIdAndListingId(accountId, listingId)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "You have already unlocked this listing");
+                return paymentRepository
+                        .findFirstByAccountIdAndListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(
+                                accountId, listingId, PaymentPurpose.LISTING_UNLOCK,
+                                List.of(PaymentStatus.SUCCESS))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                                "Listing access already exists without a successful payment record"));
             }
 
             var pending = paymentRepository

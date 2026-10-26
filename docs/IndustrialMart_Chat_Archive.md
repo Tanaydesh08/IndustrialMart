@@ -83,3 +83,34 @@ Prior verification from the earlier implementation work (as reported in the earl
 ## Never disclose
 
 The earlier repository configuration contained a database credential. Do not copy its value into this archive, chat, logs, or documentation. Rotate it through Railway as an independent authorized operation.
+
+## Follow-up: buyer unlock calls, page refreshes, and language toggle (2026-10-26)
+
+### Inspection findings
+
+- `frontend/src/pages/ListingDetailsPage.jsx` contained no `location.reload()` after unlock; it already fetched protected details and updated React state. It did, however, always fetch the generic listing first and then the protected details endpoint for a buyer, including buyers who already had access.
+- The detail loading effect did not abort on unmount/route changes or guard state updates from stale responses. The disabled button was controlled only by React state, which may not update before a rapid double click.
+- `PrototypePaymentService.createListingUnlockPayment()` locked the listing and reused a pending transaction, but returned HTTP conflict when an entitlement already existed, even when the successful payment record was available. It did not create another charge, but it was not a successful idempotent retry response.
+- The shared header used a two-option language `<select>`, not a single toggle.
+
+### Changes
+
+- Buyer detail loading now asks the protected endpoint first. Only a successful backend response marks details as unlocked. A 403/404 falls back to the public preview, cached in memory only; cache is never used as proof of entitlement. Reopened already-unlocked listings need only the protected request.
+- Listing reads accept an AbortSignal. The page aborts old loads and uses request/flow sequence guards to prevent stale results from replacing current state.
+- A synchronous in-flight ref guards unlock creation and simulation against rapid duplicate clicks. A failed simulation clears its payment so a new retry creates a new transaction. After success, React state renders protected details in place. If the payment succeeds but details cannot be fetched, the UI keeps the successful transaction and offers a details-only retry without another payment.
+- Repeated backend unlock-payment creation for an existing entitlement returns its latest successful `LISTING_UNLOCK` transaction. If entitlement data exists without a successful payment record, it returns conflict and does not create a new payment.
+- The header language selector is now one accessible English/Hindi (Roman) toggle. The selected language still persists through the existing app context.
+- Added tests for failed-payment retry, repeated successful access without a second charge, and frontend in-place/request-guard/toggle contracts.
+
+### Files changed in this follow-up
+
+- Frontend: `src/pages/ListingDetailsPage.jsx`, `src/api/listingApi.js`, `src/api/unlockApi.js`, `src/components/layout/SiteLayout.jsx`, `src/i18n/labels.js`, `src/i18n/labels.test.js`
+- Backend: `src/main/java/com/IndustrialMart/Backend/payment/PrototypePaymentService.java`, `src/test/java/com/IndustrialMart/Backend/PrototypePaymentServiceTests.java`
+
+### Follow-up verification
+
+- Frontend: `npm.cmd test` — **5 passed, 0 failed**.
+- Frontend: `npm.cmd run build -- --outDir ..\build-check` — **Vite production build succeeded** (1657 modules); temporary output removed afterward.
+- Backend: Maven `test` — **BUILD SUCCESS**, 26 tests, 0 failures, 0 errors, 0 skipped. Includes buyer payment retry/idempotency and entitlement rollback tests.
+- `git diff --check` passed. The only remaining `window.location.assign('/login')` is the separate expired-session redirect in `AppContext`; no page reload or full-page navigation is used after unlocking.
+- No deployment, production data change, Railway setting change, commit, or push occurred.

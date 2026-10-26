@@ -79,7 +79,11 @@ class PrototypePaymentServiceTests {
         assertEquals(PaymentStatus.SUCCESS, payments.simulatePayment(otherBuyer.getId(), otherPayment.getId(), true).getStatus());
         assertEquals(2, transactions.findAll().stream().filter(p -> p.getListingId().equals(approvedListing.getId())
                 && p.getPurpose() == PaymentPurpose.LISTING_UNLOCK && p.getStatus() == PaymentStatus.SUCCESS).count());
-        assertThrows(ResponseStatusException.class, () -> payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId()));
+        var repeated = payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId());
+        assertEquals(created.getId(), repeated.getId());
+        assertEquals(PaymentStatus.SUCCESS, repeated.getStatus());
+        assertEquals(2, transactions.findAll().stream().filter(p -> p.getListingId().equals(approvedListing.getId())
+                && p.getPurpose() == PaymentPurpose.LISTING_UNLOCK && p.getStatus() == PaymentStatus.SUCCESS).count());
     }
 
     @Test
@@ -89,6 +93,24 @@ class PrototypePaymentServiceTests {
         assertFalse(entitlements.existsByAccountIdAndListingId(buyer.getId(), approvedListing.getId()));
         assertThrows(ResponseStatusException.class, () -> unlocks.getUnlockedDetails(buyer.getId(), approvedListing.getId()));
         assertThrows(ResponseStatusException.class, () -> payments.simulatePayment(otherBuyer.getId(), payment.getId(), true));
+    }
+
+    @Test
+    void failedUnlockCanBeRetriedAndDuplicateAccessReturnsExistingSuccessWithoutAnotherCharge() {
+        var failedAttempt = payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId());
+        assertEquals(PaymentStatus.FAILED,
+                payments.simulatePayment(buyer.getId(), failedAttempt.getId(), false).getStatus());
+        assertFalse(entitlements.existsByAccountIdAndListingId(buyer.getId(), approvedListing.getId()));
+
+        var retry = payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId());
+        assertNotEquals(failedAttempt.getId(), retry.getId());
+        assertEquals(PaymentStatus.SUCCESS, payments.simulatePayment(buyer.getId(), retry.getId(), true).getStatus());
+
+        var repeatedRequest = payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId());
+        assertEquals(retry.getId(), repeatedRequest.getId());
+        assertEquals(1, transactions.findAll().stream().filter(p -> p.getAccountId().equals(buyer.getId())
+                && p.getListingId().equals(approvedListing.getId()) && p.getPurpose() == PaymentPurpose.LISTING_UNLOCK
+                && p.getStatus() == PaymentStatus.SUCCESS).count());
     }
 
     @Test

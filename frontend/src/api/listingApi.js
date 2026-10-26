@@ -3,7 +3,7 @@ import { apiClient, apiData } from './client'
 export const getListings = (params, config = {}) => apiData(apiClient.get('/api/listings', { ...config, params }))
 export const getRecentListings = () => apiData(apiClient.get('/api/listings/recent'))
 export const getMyListings = () => apiData(apiClient.get('/api/listings/seller/mine'))
-export const getListing = id => apiData(apiClient.get(`/api/listings/${encodeURIComponent(id)}`))
+export const getListing = (id, config = {}) => apiData(apiClient.get(`/api/listings/${encodeURIComponent(id)}`, config))
 export const createListing = payload => apiData(apiClient.post('/api/listings', payload))
 export const updateListing = (id, payload) => apiData(apiClient.put(`/api/listings/${encodeURIComponent(id)}`, payload))
 export const deleteListing = id => apiData(apiClient.delete(`/api/listings/${encodeURIComponent(id)}`))
