@@ -129,3 +129,33 @@ Changes:
 Files changed: `frontend/src/pages/CreateListingPage.jsx`, `frontend/src/i18n/labels.js`, `frontend/src/i18n/labels.test.js`, `Backend/Backend/src/main/java/com/IndustrialMart/Backend/payment/PrototypePaymentService.java`, and `Backend/Backend/src/test/java/com/IndustrialMart/Backend/PrototypePaymentServiceTests.java`.
 
 Verification: `npm.cmd test` **6 passed**; `npm.cmd run build -- --outDir ..\build-check` succeeded (1657 modules); Maven `test` **BUILD SUCCESS, 27 tests, 0 failures/errors/skips**; `git diff --check` passed. Temporary build output was removed. No production deployment, data change, or settings change was performed.
+
+## Follow-up: store new listing photos in PostgreSQL (2026-10-26)
+
+The production image upload returned 503 because S3 bucket storage was not configured, and the user confirmed they do not have AWS. New uploads now persist image bytes in a PostgreSQL `BYTEA` table named `listing_photo_blobs`, with content type and generated object key. The existing listing image URL shape and authorized photo controller remain unchanged. The image controller still checks listing association, visibility, and buyer entitlement before returning bytes.
+
+Added non-destructive Flyway migration `V2__Create_listing_photo_blobs.sql`; it creates the binary photo table without resetting or altering existing listings/payments. New uploads and local legacy-photo migration save to PostgreSQL. Optional S3 reads are retained solely for old object references if a prior bucket is configured; no S3 setting is required for new photos. Docs now note that database/WAL/backups grow with photos (up to 8 × 5 MB per listing).
+
+Files changed: `Backend/Backend/src/main/java/com/IndustrialMart/Backend/listing/ListingPhotoBlob.java`, `ListingPhotoBlobRepository.java`, `ListingImageStorage.java`, `Backend/Backend/src/main/resources/db/migration/V2__Create_listing_photo_blobs.sql`, `Backend/Backend/src/test/java/com/IndustrialMart/Backend/ListingImageStorageTests.java`, `ListingPhotoDatabaseTests.java`, `RoleAuthorizationTests.java`, `application.properties`, and `RAILWAY_SETUP.md`.
+
+Verification: Maven `test` **BUILD SUCCESS, 28 tests, 0 failures/errors/skips**. This includes a relational H2 persistence/read test without AWS configuration. `git diff --check` was also run. This is local/test verification only: V2 has not been applied to Railway, and no settings, production data, deployment, commit, or push were changed.
+
+## Follow-up: Cloudinary photo storage selection (2026-10-26)
+
+The user selected Cloudinary for listing photos because AWS is unavailable. This supersedes the immediately preceding PostgreSQL `BYTEA` photo-storage proposal. No Cloudinary account credentials were provided and no Cloudinary live upload was performed.
+
+Implementation in the current workspace:
+
+- New photos upload from the backend to Cloudinary with `type=authenticated`; originals and derivatives are not anonymously deliverable.
+- PostgreSQL stores metadata only in the pending Flyway V2 table `listing_photo_assets`: app object key, Cloudinary public ID, content type, and extension/format. Image bytes are not stored locally or in PostgreSQL.
+- The existing app image URL remains stable. Its existing protected controller continues checking listing visibility, seller ownership/admin access, and buyer entitlement before it reads the Cloudinary asset and returns the bytes. Cloudinary URLs and credentials are not sent to the browser.
+- New image uploads require backend variables `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`; missing configuration yields HTTP 503. The backend validates image signature/content, permits JPG/PNG/WEBP, up to 8 photos per batch and 5 MB each, and generates opaque random asset names. Cloudinary objects are best-effort deleted if their metadata save fails.
+- Existing local images can be migrated while their source files still exist using the existing ADMIN migration flow. Optional legacy S3 reads remain supported if configured. An actual image migration may be needed for old durable references.
+- `application.properties` was updated to Railway `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, and `JWT_SECRET` environment references. Previously exposed database credential is treated as compromised; it has not been rotated in Railway. No production settings/data were changed.
+- Pending Flyway V2 now creates `listing_photo_assets`. This workspace-only migration has not been applied to any production database. Review Flyway history and backup before any separately authorized deployment; it preserves existing listing/payment data.
+
+Files changed for this follow-up: `Backend/Backend/pom.xml`, `Backend/Backend/RAILWAY_SETUP.md`, `Backend/Backend/src/main/resources/application.properties`, `Backend/Backend/src/main/resources/db/migration/V2__Create_listing_photo_assets.sql`, `Backend/Backend/src/main/java/com/IndustrialMart/Backend/config/CloudinaryConfig.java`, `CloudinaryAssetClientImpl.java`, `Backend/Backend/src/main/java/com/IndustrialMart/Backend/listing/CloudinaryAssetClient.java`, `ListingImageStorage.java`, `ListingPhotoBlob.java`, `Backend/Backend/src/test/java/com/IndustrialMart/Backend/ListingImageStorageTests.java`, and `ListingPhotoDatabaseTests.java`.
+
+Verification: backend Maven `test` completed **BUILD SUCCESS**, 29 tests, 0 failures, 0 errors, and 0 skipped. Cloudinary calls were mocked; no real Cloudinary request was made. No frontend source changed for this provider switch. No deployment, push, commit, Railway configuration change, database migration, or credential rotation occurred.
+
+Safe setup/release after review: create a Cloudinary account/product environment; add the three Cloudinary variables only to Railway's backend service; ensure the configured environment is the one intended for listing photos and keep delivery authenticated; take a PostgreSQL backup and inspect Flyway history; separately authorize deployment; verify V2 in Flyway history; then test a signed-in seller upload of one and several valid photos, confirm stored app URLs and public-ID metadata without direct public Cloudinary delivery, load authorized listing images, confirm unauthorized requests remain denied, and verify images survive a backend restart/redeploy. Do not claim storage is operational until that live test succeeds.

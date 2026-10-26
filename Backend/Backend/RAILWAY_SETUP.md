@@ -1,59 +1,33 @@
-# Railway environment and durable listing photos
+# Railway backend configuration
 
-## PostgreSQL
+## PostgreSQL and migrations
 
-The application reads Railway PostgreSQL's standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. In Railway, reference these from the PostgreSQL service in the backend service's Variables page, for example `PGHOST=${{Postgres.PGHOST}}` and corresponding references for the other four variables. Use the internal hostname when both services share the Railway project/private network. Do not copy a database URL or password into this file, source code, or frontend variables.
+The backend reads Railway PostgreSQL variables `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD`. Reference them from Railway's PostgreSQL service in the backend service variables. Prefer the internal host when both services are in the same Railway project. Credentials must remain backend-only.
 
-`spring.jpa.hibernate.ddl-auto=update` remains enabled to preserve the existing schema and data. It does not drop or recreate the database. No production database reset or destructive migration is part of this change.
+Flyway migrations run before Hibernate. V1 extends the payment purpose check; V2 creates `listing_photo_assets` for Cloudinary metadata. Both preserve existing listing and payment data. Review `flyway_schema_history` and take a backup before any separately authorized production rollout. Do not reset the database. `ddl-auto=update` does not replace migrations.
 
-The backend uses Flyway versioned migrations before JPA schema updates. The initial migration is `V1__AllowListingUnlockPaymentPurpose`; it replaces the existing `payment_transactions_purpose_check` with the same supported purposes plus `LISTING_UNLOCK`. It does not update or delete payment rows. Since this repository had no earlier migration history, an existing non-empty database is baselined at version `0`, then V1 is applied. Verify the service logs show Flyway applying V1 and inspect `flyway_schema_history` before enabling buyer unlocks. If a Flyway history table already exists in Railway, review its version and checksum before rollout; do not reset or baseline it again.
+## Listing photo storage with Cloudinary
 
-### Buyer-unlock migration rollout
+New listing photos are uploaded by the backend to Cloudinary as `authenticated` image assets. This protects originals and derived assets from anonymous delivery. PostgreSQL stores only the generated app object key, Cloudinary public ID, content type, and format in `listing_photo_assets`; image bytes are not stored in Railway's ephemeral filesystem or PostgreSQL. The existing `/api/listings/images/{key}` route remains the app URL and continues to enforce listing ownership, visibility, and buyer entitlement before fetching the protected image server-side. The Cloudinary URL and credentials are never sent to the browser.
 
-1. Review the migration and take a Railway PostgreSQL backup/snapshot using the normal production backup procedure.
-2. Deploy the reviewed backend build through the separately approved release process. Application startup runs Flyway before Hibernate; Hibernate `ddl-auto=update` alone does not amend an existing PostgreSQL CHECK constraint.
-3. Confirm startup logs report V1 successful. In PostgreSQL, inspect `flyway_schema_history` for successful version `1` and inspect the definition of `payment_transactions_purpose_check`; it must allow `CREDIT_PACK`, `LISTING_FEE`, and `LISTING_UNLOCK`.
-4. Using an existing approved listing, sign in as a buyer, request the unlock, complete the simulated payment, then reopen the details. Verify the payment is successful and the entitlement is scoped to that buyer. A buyer with no entitlement should still receive 403 from the details endpoint.
-5. If Flyway fails, leave the existing app/data intact and investigate the migration error before retrying. Do not manually delete rows, drop schema objects, or reset `flyway_schema_history`.
+Required backend-only Railway variables for new uploads:
 
-## S3-compatible object storage
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
-New listing photos are stored in private S3 objects. Configure these backend service variables before enabling seller uploads:
+Create a Cloudinary account/product environment, then set the cloud name and API credentials in the Railway backend service variables. Never use a Cloudinary upload preset that makes these assets public. New uploads fail with HTTP 503 until all three variables are configured. No real Cloudinary upload has been verified from this development environment because production credentials are not available here.
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `S3_BUCKET` | Yes | Private bucket name |
-| `S3_REGION` | Yes for provider | Signing region; defaults to `us-east-1` |
-| `S3_ENDPOINT` | Provider specific | Leave unset for AWS S3; set the provider's HTTPS endpoint for R2 or another S3-compatible service |
-| `S3_PATH_STYLE` | Provider specific | `true` if the provider requires path style addressing; otherwise `false` |
-| `AWS_ACCESS_KEY_ID` | Yes | Backend-only storage access key |
-| `AWS_SECRET_ACCESS_KEY` | Yes | Backend-only storage secret |
-| `AWS_SESSION_TOKEN` | Optional | Temporary credential token, if issued |
+The backend accepts JPG, PNG, or WEBP only, validates file signatures/content, allows up to 8 images per upload with a 5 MB per-file limit, and generates random asset IDs. Uploads that cannot be recorded in PostgreSQL are deleted from Cloudinary on a best-effort basis. App image URLs remain stable; the database metadata points to Cloudinary for retrieval. Cloudinary availability and account storage/bandwidth limits apply.
 
-Create a private bucket and keep public access blocked. Grant the backend credentials only the minimum bucket-scoped `PutObject`, `GetObject`, and `DeleteObject` permissions for listing image objects. Browser images are fetched through the authenticated backend API, so the bucket does not need public-read access. Provider credentials must never be set as `VITE_*` variables.
-
-The implementation uses AWS SDK for Java 2.x and supports endpoint overrides for S3-compatible services. See [AWS SDK Java endpoint configuration](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/endpoint-config.html) and [AWS SDK Java Maven setup](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/setup-project-maven.html).
-
-## Existing local photo migration
-
-Existing `/listing-images/<filename>` values remain readable from the configured legacy directory while those files exist. Before replacing/redeploying an instance that still has local photos:
-
-1. Configure and verify the private bucket variables above.
-2. Ensure the old files are still present in the backend's `LISTING_IMAGE_DIRECTORY` (defaults to `./uploads/listings`).
-3. Call `POST /api/admin/storage/migrate-legacy-listing-images` with an ADMIN JWT while the old files are accessible.
-4. Confirm `migratedImages` and `missingLegacyFiles` in the response, then verify migrated photos in Deals and listing details.
-5. Back up the old directory before removing or replacing the old service.
-
-The migration keeps old files in place and updates each database image reference only after its object upload succeeds. It is safe to rerun; already migrated URLs are skipped. Missing old files are reported and left untouched in the database. Do not redeploy away from the old filesystem until the migration reports zero missing files and photos have been checked.
+Older S3-backed objects can still be read when the optional `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, and `S3_PATH_STYLE` settings and credentials are present. Older local `/listing-images/<filename>` references remain readable from `LISTING_IMAGE_DIRECTORY` while the files exist. Use the ADMIN legacy-image migration endpoint while source files are available; the migrated objects are uploaded to Cloudinary. Existing local photos must be migrated before the old container files disappear.
 
 ## Required backend variables
 
-Required for normal Railway operation: `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `JWT_SECRET`, and `CORS_ALLOWED_ORIGIN`. `PGPORT` defaults to `5432`; set it if the Railway service uses a different port. `PORT` is supplied by Railway. `JWT_SECRET` must be a random secret with at least 32 bytes.
+Required in Railway: `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGIN`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`. `PGPORT` defaults to `5432`; Railway supplies `PORT`. `JWT_SECRET` must contain at least 32 bytes. Database credentials and Cloudinary credentials must never be placed in frontend variables.
 
-Required for durable photo uploads: `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY`; additionally configure `S3_ENDPOINT` and `S3_PATH_STYLE` when required by the provider.
+Optional application variables include `LISTING_FEE_PAISE`, `LISTING_UNLOCK_PRICE_PAISE`, `CREDIT_PACK_PAISE`, `CREDIT_PACK_CREDITS`, `SHOW_SQL`, `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD`, and `LISTING_IMAGE_DIRECTORY` (legacy local reads/migration only).
 
-Optional application variables include `LISTING_FEE_PAISE`, `LISTING_UNLOCK_PRICE_PAISE`, `CREDIT_PACK_PAISE`, `CREDIT_PACK_CREDITS`, `SHOW_SQL`, `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD`, and `LISTING_IMAGE_DIRECTORY` (legacy reads/migration only). Never enable SQL logging in production unless there is a specific need and reviewed data exposure controls.
+## Previously exposed database credential
 
-## Database credential rotation
-
-The previous source configuration contained a PostgreSQL credential and it must be treated as compromised. Rotate/reset the PostgreSQL credential in Railway, then update the backend's `PGPASSWORD` variable (and `PGUSER` if Railway issues a replacement username). Update service references together, allow Railway to restart the backend, verify the health endpoint and a signed-in database-backed page, and remove any stale credential variables. Do not rotate while the service is live without coordinating the resulting restart. The credential has not been rotated by this code change.
+A PostgreSQL credential was present in repository configuration and must be treated as compromised. Rotate it in Railway, update the backend `PGPASSWORD` (and `PGUSER` if Railway issues a replacement), and coordinate restart/verification as a separate authorized production operation. This code change does not rotate credentials or modify Railway.

@@ -114,7 +114,7 @@ class RoleAuthorizationTests {
         mvc.perform(get("/api/listings/{id}", pending.getId()).header("Authorization", bearer(owner)))
                 .andExpect(status().isOk());
         mvc.perform(get("/api/listings/images/{key}", key).header("Authorization", bearer(owner)))
-                .andExpect(status().isServiceUnavailable());
+                .andExpect(status().isNotFound());
     }
 
     @Test
