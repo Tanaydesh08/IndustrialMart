@@ -1,6 +1,5 @@
 import { apiClient, apiData } from './client'
 
-export const unlockListing = listingId => apiData(apiClient.post(`/api/prototype/buyer/listings/${encodeURIComponent(listingId)}/unlock`))
 export const createListingUnlockPayment = listingId => apiData(apiClient.post('/api/prototype/payments/listing-unlock', null, { params: { listingId } }))
 export const simulatePayment = (paymentId, success) => apiData(apiClient.post(`/api/prototype/payments/${encodeURIComponent(paymentId)}/simulate`, { success }))
 export const getUnlockedListingDetails = listingId => apiData(apiClient.get(`/api/prototype/buyer/listings/${encodeURIComponent(listingId)}/details`))

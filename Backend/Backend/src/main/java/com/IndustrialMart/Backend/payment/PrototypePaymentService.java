@@ -7,6 +7,8 @@ import com.IndustrialMart.Backend.unlock.ListingUnlock;
 import com.IndustrialMart.Backend.unlock.ListingUnlockRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,6 +18,7 @@ import java.util.List;
 
 @Service
 public class PrototypePaymentService {
+    private static final Logger log = LoggerFactory.getLogger(PrototypePaymentService.class);
 
     private final PaymentRepository paymentRepository;
     private final CreditWalletRepository walletRepository;
@@ -44,39 +47,45 @@ public class PrototypePaymentService {
 
     @Transactional
     public PaymentTransaction createListingUnlockPayment(Long accountId, Long listingId) {
-        validateAccount(accountId);
-        validateListingId(listingId);
-        if (listingUnlockPricePaise != 9900L) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Listing unlock price must be ₹99 (9900 paise)");
-        }
+        try {
+            validateAccount(accountId);
+            validateListingId(listingId);
+            if (listingUnlockPricePaise <= 0) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Listing unlock payment is not configured");
+            }
 
-        Listing listing = listingRepository.findByIdForUpdate(listingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found"));
-        if (listing.getStatus() != ListingStatus.APPROVED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only approved listings can be unlocked");
-        }
-        if (listing.getSellerUserId() != null && listing.getSellerUserId().equals(accountId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "You cannot purchase access to your own listing");
-        }
-        if (unlockRepository.existsByAccountIdAndListingId(accountId, listingId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "You have already unlocked this listing");
-        }
+            Listing listing = listingRepository.findByIdForUpdate(listingId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found"));
+            if (listing.getStatus() != ListingStatus.APPROVED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Only approved listings can be unlocked");
+            }
+            if (listing.getSellerUserId() != null && listing.getSellerUserId().equals(accountId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "You cannot purchase access to your own listing");
+            }
+            if (unlockRepository.existsByAccountIdAndListingId(accountId, listingId)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "You have already unlocked this listing");
+            }
 
-        var pending = paymentRepository
-                .findFirstByAccountIdAndListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(
-                        accountId, listingId, PaymentPurpose.LISTING_UNLOCK,
-                        List.of(PaymentStatus.PENDING));
-        if (pending.isPresent()) {
-            return pending.get();
-        }
+            var pending = paymentRepository
+                    .findFirstByAccountIdAndListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(
+                            accountId, listingId, PaymentPurpose.LISTING_UNLOCK,
+                            List.of(PaymentStatus.PENDING));
+            if (pending.isPresent()) return pending.get();
 
-        PaymentTransaction payment = new PaymentTransaction(
-                accountId, PaymentPurpose.LISTING_UNLOCK, 9900L, 0);
-        payment.setListingId(listingId);
-        return paymentRepository.save(payment);
+            PaymentTransaction payment = new PaymentTransaction(
+                    accountId, PaymentPurpose.LISTING_UNLOCK, listingUnlockPricePaise, 0);
+            payment.setListingId(listingId);
+            return paymentRepository.save(payment);
+        } catch (ResponseStatusException expected) {
+            throw expected;
+        } catch (RuntimeException unexpected) {
+            log.error("Buyer listing unlock payment creation failed (listingId={}, cause={})",
+                    listingId, unexpected.getClass().getSimpleName());
+            throw unexpected;
+        }
     }
 
     @Transactional
@@ -174,7 +183,7 @@ public class PrototypePaymentService {
         if (listingId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Listing ID is missing from this payment");
         }
-        if (payment.getAmountPaise() == null || payment.getAmountPaise() != 9900L) {
+        if (payment.getAmountPaise() == null || payment.getAmountPaise() <= 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Invalid amount for listing unlock payment");
         }
 

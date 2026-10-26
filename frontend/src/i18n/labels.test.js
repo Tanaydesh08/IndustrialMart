@@ -55,3 +55,17 @@ test('frontend routes protect every feature area and preserve auth-only entry ro
   assert.match(context, /im:unauthorized/)
   assert.match(context, /removeItem\('im-user'\)/)
 })
+
+test('buyer payment creation and protected details calls use the mapped backend routes', async () => {
+  const api = await readSource(resolve(sourceRoot, 'api', 'unlockApi.js'), 'utf8')
+  const backendController = await readSource(resolve(sourceRoot, '../../Backend/Backend/src/main/java/com/IndustrialMart/Backend/payment/PrototypePaymentController.java'), 'utf8')
+  const buyerController = await readSource(resolve(sourceRoot, '../../Backend/Backend/src/main/java/com/IndustrialMart/Backend/unlock/BuyerListingUnlockController.java'), 'utf8')
+  assert.match(api, /post\('\/api\/prototype\/payments\/listing-unlock'/)
+  assert.match(api, /params: \{ listingId \}/)
+  assert.match(api, /get\(`\/api\/prototype\/buyer\/listings\/\$\{encodeURIComponent\(listingId\)\}\/details`\)/)
+  assert.doesNotMatch(api, /\/listings\/.*\/unlock/)
+  assert.match(backendController, /@RequestMapping\("\/api\/prototype"\)/)
+  assert.match(backendController, /@PostMapping\("\/payments\/listing-unlock"\)/)
+  assert.match(buyerController, /@RequestMapping\("\/api\/prototype\/buyer"\)/)
+  assert.match(buyerController, /@GetMapping\("\/listings\/\{listingId\}\/details"\)/)
+})

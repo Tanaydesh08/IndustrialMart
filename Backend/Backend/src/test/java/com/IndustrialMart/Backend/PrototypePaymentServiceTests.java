@@ -18,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -26,6 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -34,7 +39,7 @@ class PrototypePaymentServiceTests {
     @Autowired BuyerListingUnlockService unlocks;
     @Autowired ListingRepository listings;
     @Autowired UserRepository users;
-    @Autowired PaymentRepository transactions;
+    @MockitoSpyBean PaymentRepository transactions;
     @Autowired ListingUnlockRepository entitlements;
 
     private User buyer;
@@ -45,6 +50,7 @@ class PrototypePaymentServiceTests {
 
     @BeforeEach
     void setup() {
+        ReflectionTestUtils.setField(payments, "listingUnlockPricePaise", 9900L);
         String suffix = UUID.randomUUID().toString();
         buyer = users.saveAndFlush(new User("Buyer One", "buyer-one-" + suffix + "@test.invalid", "hash", UserRole.BUYER));
         otherBuyer = users.saveAndFlush(new User("Buyer Two", "buyer-two-" + suffix + "@test.invalid", "hash", UserRole.BUYER));
@@ -110,6 +116,34 @@ class PrototypePaymentServiceTests {
     void nonApprovedListingCannotBeUnlocked() {
         assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
                 () -> payments.createListingUnlockPayment(buyer.getId(), pendingListing.getId())).getStatusCode());
+    }
+
+    @Test
+    void configuredUnlockPriceDoesNotTriggerServerErrorAndIsRecordedAndValidated() {
+        // Reproduces the old explicit 500 branch when Railway overrides the documented price property.
+        ReflectionTestUtils.setField(payments, "listingUnlockPricePaise", 12500L);
+        var payment = assertDoesNotThrow(() ->
+                payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId()));
+        assertEquals(12500L, payment.getAmountPaise());
+        assertEquals(PaymentPurpose.LISTING_UNLOCK, payment.getPurpose());
+
+        var completed = payments.simulatePayment(buyer.getId(), payment.getId(), true);
+        assertEquals(PaymentStatus.SUCCESS, completed.getStatus());
+        assertTrue(entitlements.existsByAccountIdAndListingId(buyer.getId(), approvedListing.getId()));
+        assertEquals(approvedListing.getId(), unlocks.getUnlockedDetails(buyer.getId(), approvedListing.getId()).getId());
+    }
+
+    @Test
+    void entitlementAndPaymentSuccessRollBackTogetherWhenPaymentPersistenceFails() {
+        var payment = payments.createListingUnlockPayment(buyer.getId(), approvedListing.getId());
+        doThrow(new DataIntegrityViolationException("test persistence failure"))
+                .when(transactions).save(any());
+
+        assertThrows(DataIntegrityViolationException.class,
+                () -> payments.simulatePayment(buyer.getId(), payment.getId(), true));
+
+        assertFalse(entitlements.existsByAccountIdAndListingId(buyer.getId(), approvedListing.getId()));
+        assertEquals(PaymentStatus.PENDING, transactions.findById(payment.getId()).orElseThrow().getStatus());
     }
 
     @Test

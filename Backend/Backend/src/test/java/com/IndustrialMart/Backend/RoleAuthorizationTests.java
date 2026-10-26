@@ -7,6 +7,7 @@ import com.IndustrialMart.Backend.listing.ListingStatus;
 import com.IndustrialMart.Backend.user.User;
 import com.IndustrialMart.Backend.user.UserRepository;
 import com.IndustrialMart.Backend.user.UserRole;
+import com.jayway.jsonpath.JsonPath;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -125,6 +126,45 @@ class RoleAuthorizationTests {
                 .andExpect(jsonPath("$[7].id").value(8))
                 .andExpect(jsonPath("$[7].name").value("Trucks & Vehicles"))
                 .andExpect(jsonPath("$[7].slug").value("truck"));
+    }
+
+    @Test
+    void buyerListingUnlockEndpointCreatesSimulationAndGrantsOnlyThatBuyersEntitlement() throws Exception {
+        User buyer = user(UserRole.BUYER);
+        User seller = user(UserRole.SELLER);
+        Listing approved = listing(seller.getId());
+        approved.setStatus(ListingStatus.APPROVED);
+        approved = listings.saveAndFlush(approved);
+
+        mvc.perform(get("/api/prototype/buyer/listings/{id}/details", approved.getId())
+                        .header("Authorization", bearer(buyer)))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/prototype/buyer/listings/{id}/details", approved.getId())
+                        .header("Authorization", bearer(seller)))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/prototype/payments/listing-unlock").param("listingId", approved.getId().toString())
+                        .header("Authorization", bearer(seller)))
+                .andExpect(status().isForbidden());
+
+        var created = mvc.perform(post("/api/prototype/payments/listing-unlock")
+                        .param("listingId", approved.getId().toString())
+                        .param("accountId", "999999")
+                        .header("Authorization", bearer(buyer)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accountId").value(buyer.getId()))
+                .andExpect(jsonPath("$.listingId").value(approved.getId()))
+                .andExpect(jsonPath("$.amountPaise").value(9900))
+                .andExpect(jsonPath("$.purpose").value("LISTING_UNLOCK"))
+                .andReturn();
+        Number paymentId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+
+        mvc.perform(post("/api/prototype/payments/{paymentId}/simulate", paymentId.longValue())
+                        .header("Authorization", bearer(buyer))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"success\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUCCESS"));
+        mvc.perform(get("/api/prototype/buyer/listings/{id}/details", approved.getId())
+                        .header("Authorization", bearer(buyer)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.description").value("Private text"));
     }
 
     private User user(UserRole role) {

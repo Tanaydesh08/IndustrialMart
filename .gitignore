@@ -6,7 +6,6 @@
 
 # Local build outputs and dependencies.
 frontend/node_modules/
-frontend/dist/
 Backend/Backend/target/
 build-check/
 

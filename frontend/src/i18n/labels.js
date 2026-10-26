@@ -147,6 +147,7 @@ export const labels = {
   'Choose an ad in Deals; payment and details are available there.': 'Deals mein ad chunein; payment aur poori jaankari wahin milegi.',
   'Seller details become available after payment.': 'Payment ke baad seller ki poori jaankari milegi.',
   'Payment is processing…': 'Payment chal raha hai…',
+  'Simulated amount': 'Demo ki rakam',
   'INDUSTRIAL SUPPLY DEALS': 'Industrial samaan ke Deals',
   'Browse machinery, spare parts and industrial services from live Deals.': 'Live Deals mein machinery, spare parts aur industrial services dekhein.',
   'Browse Deals': 'Deals Dekhein', 'Bring your equipment to Deals.': 'Apna equipment Deals mein laayein.',
