@@ -109,6 +109,11 @@ public class ListingService {
                 ));
     }
 
+    @Transactional(readOnly = true)
+    public List<Listing> getListingsContainingImage(String imageUrl) {
+        return listingRepository.findByImageUrlsContaining(imageUrl);
+    }
+
     public Listing create(Listing request, Long sellerUserId, String sellerName) {
         Listing listing = new Listing(
                 request.getTitle(),
@@ -198,6 +203,11 @@ public class ListingService {
                         ListingStatus.NEEDS_REVIEW
                 )
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Listing> getSellerListings(Long sellerUserId) {
+        return listingRepository.findBySellerUserIdOrderByCreatedAtDesc(sellerUserId);
     }
 
     public Listing moderate(

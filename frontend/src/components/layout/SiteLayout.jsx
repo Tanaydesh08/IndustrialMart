@@ -9,14 +9,14 @@ const links = [['Deals','/marketplace'],['Seller','/seller'],['Buyer','/buyer'],
 export default function SiteLayout() {
   const [menuOpen,setMenuOpen]=useState(false)
   const [apiStatus,setApiStatus]=useState('checking')
-  const {user,signOut,t}=useApp()
+  const {user,signOut,t,language,setLanguage}=useApp()
   useEffect(()=>{getHealth().then(data=>setApiStatus(data.status==='UP'?'online':'offline')).catch(()=>setApiStatus('offline'))},[])
   return <div className="app-shell">
     <header className="site-header"><div className="site-header-inner">
       <Link className="brand" to="/"><span className="brand-mark"><Factory size={21}/></span><span>Industrial <b>Mart</b></span></Link>
-      <div className="header-controls">{user?<button className="language-toggle logout-button" onClick={()=>{signOut();setMenuOpen(false)}}><LogOut size={15}/><span>{t('Sign out')}</span></button>:<Link className="language-toggle login-link" to="/login">{t('Log in')}</Link>}<button className="mobile-menu" aria-label="Toggle navigation" onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?<X/>:<Menu/>}</button></div>
+      <div className="header-controls"><label className="language-toggle"><span className="sr-only">{t('Choose language')}</span><select aria-label={t('Choose language')} value={language} onChange={event=>setLanguage(event.target.value)}><option value="en">English</option><option value="hi">Hindi (Roman)</option></select></label>{user?<button className="language-toggle logout-button" onClick={()=>{signOut();setMenuOpen(false)}}><LogOut size={15}/><span>{t('Sign out')}</span></button>:<Link className="language-toggle login-link" to="/login">Login</Link>}<button className="mobile-menu" aria-label={t('Toggle navigation')} onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?<X/>:<Menu/>}</button></div>
       <nav className={`main-nav ${menuOpen?'nav-open':''}`}>
-        {links.filter(([,path])=>path==='/marketplace'||user&&(path==='/seller'&&user.role==='SELLER'||path==='/buyer'&&user.role==='BUYER'||path==='/admin'&&user.role==='ADMIN')).map(([label,path])=><NavLink key={path} to={path} onClick={()=>setMenuOpen(false)} className={({isActive})=>isActive?'nav-link active':'nav-link'}>{t(label)}</NavLink>)}
+        {user&&links.filter(([,path])=>path==='/marketplace'||(path==='/seller'&&user.role==='SELLER'||path==='/buyer'&&user.role==='BUYER'||path==='/admin'&&user.role==='ADMIN')).map(([label,path])=><NavLink key={path} to={path} onClick={()=>setMenuOpen(false)} className={({isActive})=>isActive?'nav-link active':'nav-link'}>{t(label)}</NavLink>)}
         {user&&<button className="nav-link nav-logout" onClick={()=>{signOut();setMenuOpen(false)}}><LogOut size={15}/><span>{t('Sign out')}</span></button>}
         <span className={`api-indicator api-${apiStatus}`}><i/>{t(apiStatus==='online'?'API online':apiStatus==='offline'?'API unavailable':'Connecting')}</span>
       </nav>

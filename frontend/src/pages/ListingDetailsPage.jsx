@@ -9,9 +9,10 @@ import { useApp } from '../context/AppContext'
 import CategoryIcon from '../components/common/CategoryIcon'
 import { getUnlockedListingDetails, createListingUnlockPayment, simulatePayment } from '../api/unlockApi'
 import { useNavigate } from 'react-router-dom'
+import ProtectedImage from '../components/common/ProtectedImage'
 
 export default function ListingDetailsPage() {
-  const { t } = useApp()
+  const { t, tError } = useApp()
   const { user } = useApp()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -41,7 +42,7 @@ export default function ListingDetailsPage() {
     try {
       setPayment(await createListingUnlockPayment(id))
       setUnlockMessage(t('Payment taiyar hai. Demo ke liye result chunein.'))
-    } catch (err) { setUnlockMessage(err.message) }
+    } catch (err) { setUnlockMessage(tError(err.message)) }
     finally { setUnlockBusy(false) }
   }
   async function finishUnlock(success) {
@@ -53,13 +54,13 @@ export default function ListingDetailsPage() {
       const details = await getUnlockedListingDetails(id)
       setListing(details)
       setUnlockMessage(t('Jaankari khul gayi. Yeh demo payment hai.'))
-    } catch (err) { setUnlockMessage(err.message) }
+    } catch (err) { setUnlockMessage(tError(err.message)) }
     finally { setUnlockBusy(false) }
   }
   if (loading) return <section className="section-wrap page-section"><LoadingState label={t('Loading listing…')}/></section>
   if (error) return <section className="section-wrap page-section"><Link className="back-link" to="/marketplace"><ArrowLeft size={16}/> {t('Back to marketplace')}</Link><ErrorState message={error} onRetry={load}/></section>
   return <section className="section-wrap page-section">
     <Link className="back-link" to="/marketplace"><ArrowLeft size={16}/> {t('Back to marketplace')}</Link>
-    <article className="detail-layout"><div className="detail-content"><div className="detail-top"><p className="eyebrow">{t(listing.categorySlug?.replaceAll('-',' ') || '')}</p><StatusBadge status={listing.status}/></div><h1>{t(listing.title)}</h1>{listing.imageUrls?.length ? <div className="detail-gallery">{listing.imageUrls.map(src=><img key={src} src={src} alt={listing.title}/>)}</div> : <div className={`detail-illustration detail-art-${listing.categorySlug || 'default'}`}><span><CategoryIcon slug={listing.categorySlug}/></span></div>}<p className="detail-price">{formatINR(listing.price)}</p>{listing.unlockAuthorized&&<><p className="detail-description">{t(listing.description)}</p><dl className="detail-facts"><div><dt>{t('Condition')}</dt><dd>{t(listing.condition)}</dd></div><div><dt>{t('Seller')}</dt><dd>{t(listing.sellerName)}</dd></div><div><dt>{t('Location')}</dt><dd><MapPin size={15}/>{t(listing.location)}</dd></div></dl></>}{user?.role==='BUYER'&&listing.status==='APPROVED'&&!listing.unlockAuthorized&&<div className="workflow-card"><p>{t('Seller ki poori jaankari payment ke baad milegi.')}</p><p className="helper-note">{t('Prototype payment: no real money is charged.')}</p>{!payment?<button className="button button-primary" disabled={unlockBusy} onClick={unlock}>{unlockBusy?t('Payment chal raha hai…'):'Jaankari Dekhne Ke Liye ₹99 Pay Karein'}</button>:<div className="button-row"><button className="button button-primary" disabled={unlockBusy} onClick={()=>finishUnlock(true)}>{t('Demo: Payment successful')}</button><button className="button button-secondary" disabled={unlockBusy} onClick={()=>finishUnlock(false)}>{t('Demo: Payment failed')}</button></div>}</div>}{unlockMessage&&<p className="helper-note" role="status">{unlockMessage}</p>}</div></article>
+    <article className="detail-layout"><div className="detail-content"><div className="detail-top"><p className="eyebrow">{t(listing.categorySlug?.replaceAll('-',' ') || '')}</p><StatusBadge status={listing.status}/></div><h1>{listing.title}</h1>{listing.imageUrls?.length ? <div className="detail-gallery">{listing.imageUrls.map(src=><ProtectedImage key={src} src={src} alt={listing.title}/>)}</div> : <div className={`detail-illustration detail-art-${listing.categorySlug || 'default'}`}><span><CategoryIcon slug={listing.categorySlug}/></span></div>}<p className="detail-price">{formatINR(listing.price)}</p>{listing.unlockAuthorized&&<><p className="detail-description">{listing.description}</p><dl className="detail-facts"><div><dt>{t('Condition')}</dt><dd>{t(listing.condition)}</dd></div><div><dt>{t('Seller')}</dt><dd>{listing.sellerName}</dd></div><div><dt>{t('Location')}</dt><dd><MapPin size={15}/>{listing.location}</dd></div></dl></>}{user?.role==='BUYER'&&listing.status==='APPROVED'&&!listing.unlockAuthorized&&<div className="workflow-card"><p>{t('Seller details become available after payment.')}</p><p className="helper-note">{t('Prototype payment: no real money is charged.')}</p>{!payment?<button className="button button-primary" disabled={unlockBusy} onClick={unlock}>{unlockBusy?t('Payment is processing…'):t('Pay ₹99 to View Details')}</button>:<div className="button-row"><button className="button button-primary" disabled={unlockBusy} onClick={()=>finishUnlock(true)}>{t('Demo: Payment successful')}</button><button className="button button-secondary" disabled={unlockBusy} onClick={()=>finishUnlock(false)}>{t('Demo: Payment failed')}</button></div>}</div>}{unlockMessage&&<p className="helper-note" role="status">{t(unlockMessage)}</p>}</div></article>
   </section>
 }

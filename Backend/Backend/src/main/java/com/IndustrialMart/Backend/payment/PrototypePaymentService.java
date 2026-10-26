@@ -51,7 +51,11 @@ public class PrototypePaymentService {
                     "Listing unlock price must be ₹99 (9900 paise)");
         }
 
-        Listing listing = findApprovedListing(listingId);
+        Listing listing = listingRepository.findByIdForUpdate(listingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found"));
+        if (listing.getStatus() != ListingStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only approved listings can be unlocked");
+        }
         if (listing.getSellerUserId() != null && listing.getSellerUserId().equals(accountId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "You cannot purchase access to your own listing");
@@ -84,7 +88,7 @@ public class PrototypePaymentService {
                     "Listing fee configuration is invalid");
         }
 
-        Listing listing = listingRepository.findById(listingId)
+        Listing listing = listingRepository.findByIdForUpdate(listingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found"));
         verifyListingOwnership(listing, accountId);
 
@@ -97,6 +101,10 @@ public class PrototypePaymentService {
                 listingId, PaymentPurpose.LISTING_FEE, PaymentStatus.SUCCESS)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing fee has already been paid");
         }
+
+        var pending = paymentRepository.findFirstByListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(
+                listingId, PaymentPurpose.LISTING_FEE, List.of(PaymentStatus.PENDING));
+        if (pending.isPresent()) return pending.get();
 
         PaymentTransaction payment = new PaymentTransaction(
                 accountId, PaymentPurpose.LISTING_FEE, listingFeePaise, 0);
@@ -147,7 +155,7 @@ public class PrototypePaymentService {
         if (listingId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Listing ID is missing from this payment");
         }
-        Listing listing = listingRepository.findById(listingId)
+        Listing listing = listingRepository.findByIdForUpdate(listingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found"));
         verifyListingOwnership(listing, accountId);
         if (listing.getStatus() == ListingStatus.APPROVED || listing.getStatus() == ListingStatus.REJECTED) {
@@ -171,15 +179,18 @@ public class PrototypePaymentService {
         }
 
         findApprovedListing(listingId);
-        Listing listing = listingRepository.findById(listingId).orElseThrow();
+        Listing listing = listingRepository.findByIdForUpdate(listingId).orElseThrow();
         if (listing.getSellerUserId() != null && listing.getSellerUserId().equals(accountId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "You cannot purchase access to your own listing");
         }
 
-        if (!unlockRepository.existsByAccountIdAndListingId(accountId, listingId)) {
-            unlockRepository.save(new ListingUnlock(accountId, listingId));
+        if (unlockRepository.existsByAccountIdAndListingId(accountId, listingId)) {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setCompletedAt(LocalDateTime.now());
+            return;
         }
+        unlockRepository.save(new ListingUnlock(accountId, listingId));
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setCompletedAt(LocalDateTime.now());
     }

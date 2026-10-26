@@ -1,0 +1,14 @@
+# Keep local credentials out of source control.
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Local build outputs and dependencies.
+frontend/node_modules/
+frontend/dist/
+Backend/Backend/target/
+build-check/
+
+# Legacy filesystem photo data is local and may contain user uploads.
+Backend/Backend/uploads/

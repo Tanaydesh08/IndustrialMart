@@ -6,8 +6,8 @@ export function LoadingState({ label = 'Loading…' }) {
   return <div className="state-card" role="status"><LoaderCircle className="animate-spin" size={20}/><span>{t(label)}</span></div>
 }
 export function ErrorState({ message, onRetry }) {
-  const { t } = useApp()
-  return <div className="state-card state-error" role="alert"><AlertCircle size={20}/><span>{t(message)}</span>{onRetry&&<button className="button button-secondary ml-auto" onClick={onRetry}>{t('Try again')}</button>}</div>
+  const { t, tError } = useApp()
+  return <div className="state-card state-error" role="alert"><AlertCircle size={20}/><span>{tError(message)}</span>{onRetry&&<button className="button button-secondary ml-auto" onClick={onRetry}>{t('Try again')}</button>}</div>
 }
 export function EmptyState({ title, description }) {
   const { t } = useApp()

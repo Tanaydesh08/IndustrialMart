@@ -71,6 +71,8 @@ h1,h2,h3,p { overflow-wrap: anywhere; }
 .nav-logout { display:none; }
 .language-toggle { min-height:36px; padding:0 11px; display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid #dce5ec; border-radius:8px; color:#31526b; background:#fff; font-size:11px; font-weight:650; white-space:nowrap; }
 .language-toggle:hover { border-color:#9bb8cc; background:#f4f8fb; }
+.language-toggle select { border:0; outline:0; color:inherit; background:transparent; font:inherit; cursor:pointer; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .mobile-menu { padding:7px; }
 .auth-page { width:min(1120px,100%); min-height:calc(100vh - 145px); margin:auto; padding:60px 28px; display:grid; grid-template-columns:1fr .78fr; align-items:center; gap:clamp(32px,8vw,110px); }
 .auth-intro { max-width:480px; }.auth-brand { margin-bottom:58px; display:flex; align-items:center; gap:12px; color:#193a56; font-size:19px; font-weight:750; letter-spacing:-.04em; }.auth-brand b { color:#2674a8; }

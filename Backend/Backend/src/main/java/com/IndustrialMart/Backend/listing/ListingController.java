@@ -4,10 +4,13 @@ package com.IndustrialMart.Backend.listing;
 import com.IndustrialMart.Backend.user.User;
 import com.IndustrialMart.Backend.user.UserRepository;
 import com.IndustrialMart.Backend.user.UserRole;
+import com.IndustrialMart.Backend.unlock.ListingUnlockRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,15 +25,18 @@ public class ListingController {
     private final ListingService listingService;
     private final UserRepository userRepository;
     private final ListingImageStorage imageStorage;
+    private final ListingUnlockRepository unlockRepository;
 
     public ListingController(
             ListingService listingService,
             UserRepository userRepository,
-            ListingImageStorage imageStorage
+            ListingImageStorage imageStorage,
+            ListingUnlockRepository unlockRepository
     ) {
         this.listingService = listingService;
         this.userRepository = userRepository;
         this.imageStorage = imageStorage;
+        this.unlockRepository = unlockRepository;
     }
 
     @GetMapping
@@ -44,9 +50,23 @@ public class ListingController {
     @GetMapping("/recent")
     public List<ListingSummary> getRecent() { return listingService.getRecent().stream().map(ListingSummary::from).toList(); }
 
+    @GetMapping("/seller/mine")
+    public List<Listing> getSellerListings(Authentication authentication) {
+        User seller = getCurrentUser(authentication);
+        requireSeller(seller);
+        return listingService.getSellerListings(seller.getId());
+    }
+
     @GetMapping("/{id}")
-    public ListingSummary getById(@PathVariable Long id) {
-        return ListingSummary.from(listingService.getById(id));
+    public ListingSummary getById(Authentication authentication, @PathVariable Long id) {
+        User user = getCurrentUser(authentication);
+        Listing listing = listingService.getById(id);
+        if (listing.getStatus() != ListingStatus.APPROVED
+                && user.getRole() != UserRole.ADMIN
+                && !(user.getRole() == UserRole.SELLER && user.getId().equals(listing.getSellerUserId()))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found");
+        }
+        return ListingSummary.from(listing);
     }
 
     @PostMapping(value = "/{id}/images", consumes = "multipart/form-data")
@@ -56,7 +76,33 @@ public class ListingController {
         boolean isAdmin = user.getRole() == UserRole.ADMIN;
         if (!isAdmin) requireSeller(user);
         listingService.assertCanModify(id, user.getId(), isAdmin);
-        return listingService.addImages(id, user.getId(), isAdmin, imageStorage.store(files));
+        List<String> uploaded = imageStorage.store(files);
+        try {
+            return listingService.addImages(id, user.getId(), isAdmin, uploaded);
+        } catch (RuntimeException failure) {
+            imageStorage.deleteUploaded(uploaded);
+            throw failure;
+        }
+    }
+
+    @GetMapping("/images/{key}")
+    public ResponseEntity<byte[]> getImage(Authentication authentication, @PathVariable String key) {
+        User user = getCurrentUser(authentication);
+        String imageUrl = "/api/listings/images/" + key;
+        authorizePhoto(user, imageUrl);
+        ListingImageStorage.StoredImage image = imageStorage.read(key);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(image.contentType()))
+                .body(image.bytes());
+    }
+
+    private void authorizePhoto(User user, String imageUrl) {
+        boolean mayView = listingService.getListingsContainingImage(imageUrl).stream().anyMatch(listing ->
+                listing.getStatus() == ListingStatus.APPROVED
+                        || user.getRole() == UserRole.ADMIN
+                        || user.getRole() == UserRole.SELLER && user.getId().equals(listing.getSellerUserId())
+                        || user.getRole() == UserRole.BUYER && listing.getStatus() == ListingStatus.APPROVED
+                        && unlockRepository.existsByAccountIdAndListingId(user.getId(), listing.getId()));
+        if (!mayView) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo not found");
     }
 
     @GetMapping("/moderation")

@@ -17,18 +17,26 @@ function Authenticated({ children }) {
   return user ? children : <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace/>
 }
 
+function RoleRoute({ role, children }) {
+  const { user } = useApp()
+  const location = useLocation()
+  if (!user) return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />
+  if (user.role !== role) return <Navigate to={user.role === 'ADMIN' ? '/admin' : user.role === 'SELLER' ? '/seller' : '/buyer'} replace />
+  return children
+}
+
 export default function App() {
   return <BrowserRouter><Routes><Route element={<SiteLayout/>}>
     <Route path="/" element={<HomePage/>}/>
     <Route path="/marketplace" element={<Authenticated><MarketplacePage/></Authenticated>}/>
     <Route path="/listings/:id" element={<Authenticated><ListingDetailsPage/></Authenticated>}/>
-    <Route path="/seller" element={<SellerDashboardPage/>}/>
-    <Route path="/create-listing" element={<CreateListingPage/>}/>
-    <Route path="/buyer" element={<BuyerDashboardPage/>}/>
+    <Route path="/seller" element={<RoleRoute role="SELLER"><SellerDashboardPage/></RoleRoute>}/>
+    <Route path="/create-listing" element={<RoleRoute role="SELLER"><CreateListingPage/></RoleRoute>}/>
+    <Route path="/buyer" element={<RoleRoute role="BUYER"><BuyerDashboardPage/></RoleRoute>}/>
     <Route path="/payments" element={<Navigate to="/buyer" replace/>}/>
-    <Route path="/admin" element={<AdminDashboardPage/>}/>
+    <Route path="/admin" element={<RoleRoute role="ADMIN"><AdminDashboardPage/></RoleRoute>}/>
     <Route path="/login" element={<AuthPage/>}/>
     <Route path="/register" element={<AuthPage register/>}/>
-    <Route path="*" element={<NotFoundPage/>}/>
+    <Route path="*" element={<Authenticated><NotFoundPage/></Authenticated>}/>
   </Route></Routes></BrowserRouter>
 }

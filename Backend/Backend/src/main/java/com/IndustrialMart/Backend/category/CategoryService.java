@@ -36,7 +36,7 @@ public class CategoryService {
             new Category(7L, "Industrial Services",
                     "industrial-services",
                     "Installation, repair and maintenance services."),
-            new Category(8L, "Truck", "truck", "Trucks and commercial vehicles.")
+            new Category(8L, "Trucks & Vehicles", "truck", "Trucks, mini trucks, heavy commercial vehicles, trailers and commercial transport vehicles.")
     );
 
     public List<Category> getAllCategories() {

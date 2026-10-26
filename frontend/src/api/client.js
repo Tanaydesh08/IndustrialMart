@@ -34,7 +34,10 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.response.use(
   response => response,
-  error => Promise.reject(new ApiError(friendlyMessage(error), error.response?.status || 0, error.code || 'API_ERROR')),
+  error => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/api/auth/')) window.dispatchEvent(new Event('im:unauthorized'))
+    return Promise.reject(new ApiError(friendlyMessage(error), error.response?.status || 0, error.code || 'API_ERROR'))
+  },
 )
 
 apiClient.interceptors.request.use(config => {
