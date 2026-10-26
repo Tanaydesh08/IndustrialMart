@@ -6,6 +6,16 @@ The application reads Railway PostgreSQL's standard `PGHOST`, `PGPORT`, `PGDATAB
 
 `spring.jpa.hibernate.ddl-auto=update` remains enabled to preserve the existing schema and data. It does not drop or recreate the database. No production database reset or destructive migration is part of this change.
 
+The backend uses Flyway versioned migrations before JPA schema updates. The initial migration is `V1__AllowListingUnlockPaymentPurpose`; it replaces the existing `payment_transactions_purpose_check` with the same supported purposes plus `LISTING_UNLOCK`. It does not update or delete payment rows. Since this repository had no earlier migration history, an existing non-empty database is baselined at version `0`, then V1 is applied. Verify the service logs show Flyway applying V1 and inspect `flyway_schema_history` before enabling buyer unlocks. If a Flyway history table already exists in Railway, review its version and checksum before rollout; do not reset or baseline it again.
+
+### Buyer-unlock migration rollout
+
+1. Review the migration and take a Railway PostgreSQL backup/snapshot using the normal production backup procedure.
+2. Deploy the reviewed backend build through the separately approved release process. Application startup runs Flyway before Hibernate; Hibernate `ddl-auto=update` alone does not amend an existing PostgreSQL CHECK constraint.
+3. Confirm startup logs report V1 successful. In PostgreSQL, inspect `flyway_schema_history` for successful version `1` and inspect the definition of `payment_transactions_purpose_check`; it must allow `CREDIT_PACK`, `LISTING_FEE`, and `LISTING_UNLOCK`.
+4. Using an existing approved listing, sign in as a buyer, request the unlock, complete the simulated payment, then reopen the details. Verify the payment is successful and the entitlement is scoped to that buyer. A buyer with no entitlement should still receive 403 from the details endpoint.
+5. If Flyway fails, leave the existing app/data intact and investigate the migration error before retrying. Do not manually delete rows, drop schema objects, or reset `flyway_schema_history`.
+
 ## S3-compatible object storage
 
 New listing photos are stored in private S3 objects. Configure these backend service variables before enabling seller uploads:

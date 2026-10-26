@@ -27,6 +27,8 @@ class AuthenticationSecurityTests {
         mvc.perform(get("/api/listings")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/prototype/buyer/unlocks")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/prototype/buyer/listings/1/details")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/prototype/payments/listing-unlock").param("listingId", "1"))
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/api/listings/images/00000000-0000-0000-0000-000000000001.jpg"))
                 .andExpect(status().isUnauthorized());
     }

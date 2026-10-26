@@ -15,7 +15,8 @@ public class PaymentTransaction {
     private Long accountId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 30,
+            columnDefinition = "varchar(30) check (purpose IN ('CREDIT_PACK', 'LISTING_FEE', 'LISTING_UNLOCK'))")
     private PaymentPurpose purpose;
 
     @Enumerated(EnumType.STRING)
