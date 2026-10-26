@@ -114,3 +114,18 @@ The earlier repository configuration contained a database credential. Do not cop
 - Backend: Maven `test` — **BUILD SUCCESS**, 26 tests, 0 failures, 0 errors, 0 skipped. Includes buyer payment retry/idempotency and entitlement rollback tests.
 - `git diff --check` passed. The only remaining `window.location.assign('/login')` is the separate expired-session redirect in `AppContext`; no page reload or full-page navigation is used after unlocking.
 - No deployment, production data change, Railway setting change, commit, or push occurred.
+
+## Follow-up: require listing photos (2026-10-26)
+
+The seller form previously permitted zero photos and skipped upload in that case. The image-storage upload endpoint already validates a batch of 1–8 images, but the listing-fee payment service did not require a saved image reference.
+
+Changes:
+
+- New listing form now requires at least one selected photo and supports multiple JPG/PNG/WEBP photos up to the existing maximum of 8, 5 MB each. It shows photo-count/type validation errors and has English/Hindi Roman labels.
+- If listing creation succeeds but photo upload fails, the form keeps the created listing ID and lets the seller retry upload against that same listing. It does not create another listing on retry.
+- Backend listing-fee initiation rejects a listing with no saved photo URL, so the seller cannot proceed through payment without a photo. Existing stored records and database schema are unchanged.
+- Added frontend form-contract coverage and a backend test proving that fee payment is rejected without a photo; seller-fee tests now include a saved photo.
+
+Files changed: `frontend/src/pages/CreateListingPage.jsx`, `frontend/src/i18n/labels.js`, `frontend/src/i18n/labels.test.js`, `Backend/Backend/src/main/java/com/IndustrialMart/Backend/payment/PrototypePaymentService.java`, and `Backend/Backend/src/test/java/com/IndustrialMart/Backend/PrototypePaymentServiceTests.java`.
+
+Verification: `npm.cmd test` **6 passed**; `npm.cmd run build -- --outDir ..\build-check` succeeded (1657 modules); Maven `test` **BUILD SUCCESS, 27 tests, 0 failures/errors/skips**; `git diff --check` passed. Temporary build output was removed. No production deployment, data change, or settings change was performed.

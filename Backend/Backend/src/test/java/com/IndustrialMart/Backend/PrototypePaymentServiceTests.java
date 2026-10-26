@@ -115,6 +115,7 @@ class PrototypePaymentServiceTests {
 
     @Test
     void sellerFeeUsesConfiguredAmountAndDoesNotApproveListing() {
+        addPhoto(pendingListing);
         var payment = payments.createListingFeePayment(seller.getId(), pendingListing.getId());
         assertEquals(19900L, payment.getAmountPaise());
         assertEquals(PaymentPurpose.LISTING_FEE, payment.getPurpose());
@@ -128,6 +129,7 @@ class PrototypePaymentServiceTests {
 
     @Test
     void failedSellerPaymentDoesNotRecordSuccessAndDuplicatePendingRequestIsIdempotent() {
+        addPhoto(pendingListing);
         var pending = payments.createListingFeePayment(seller.getId(), pendingListing.getId());
         assertEquals(pending.getId(), payments.createListingFeePayment(seller.getId(), pendingListing.getId()).getId());
         assertEquals(PaymentStatus.FAILED, payments.simulatePayment(seller.getId(), pending.getId(), false).getStatus());
@@ -191,6 +193,7 @@ class PrototypePaymentServiceTests {
 
     @Test
     void concurrentSellerFeeRetriesShareOneTransactionAndDoNotApprove() throws Exception {
+        addPhoto(pendingListing);
         try (var pool = Executors.newFixedThreadPool(2)) {
             var first = pool.submit(() -> payments.createListingFeePayment(seller.getId(), pendingListing.getId()));
             var second = pool.submit(() -> payments.createListingFeePayment(seller.getId(), pendingListing.getId()));
@@ -207,11 +210,26 @@ class PrototypePaymentServiceTests {
         }
     }
 
+    @Test
+    void sellerCannotStartListingFeePaymentUntilAtLeastOnePhotoIsUploaded() {
+        var failure = assertThrows(ResponseStatusException.class,
+                () -> payments.createListingFeePayment(seller.getId(), pendingListing.getId()));
+        assertEquals(HttpStatus.BAD_REQUEST, failure.getStatusCode());
+        assertEquals(0, transactions.findAll().stream()
+                .filter(payment -> pendingListing.getId().equals(payment.getListingId())
+                        && payment.getPurpose() == PaymentPurpose.LISTING_FEE).count());
+    }
+
     private Listing saveListing(String title, ListingStatus status, Long ownerId) {
         Listing listing = new Listing(title, "Private seller description", "truck", "Seller", "Pune",
                 new BigDecimal("100.00"), "NEW", status, null, LocalDateTime.now());
         listing.setSellerUserId(ownerId);
         return listings.saveAndFlush(listing);
+    }
+
+    private void addPhoto(Listing listing) {
+        listing.setImageUrls(java.util.List.of("/api/listings/images/00000000-0000-0000-0000-000000000001.jpg"));
+        listings.saveAndFlush(listing);
     }
 
     private void assertSamePayment(Long expected, Long actual) { assertEquals(expected, actual); }

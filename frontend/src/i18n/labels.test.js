@@ -81,3 +81,13 @@ test('listing unlock is in-place, request guarded, and language control is a sin
   assert.doesNotMatch(layout, /<select/)
   assert.match(layout, /setLanguage\(language === 'en' \? 'hi' : 'en'\)/)
 })
+
+test('new listing requires a photo and keeps multi-photo selection capped at eight', async () => {
+  const createListing = await readSource(resolve(sourceRoot, 'pages', 'CreateListingPage.jsx'), 'utf8')
+  const paymentService = await readSource(resolve(sourceRoot, '../../Backend/Backend/src/main/java/com/IndustrialMart/Backend/payment/PrototypePaymentService.java'), 'utf8')
+  assert.match(createListing, /if \(!photos\.length\) errors\.photos = 'Upload at least one photo\.'/)
+  assert.match(createListing, /type="file"[^>]*multiple required/)
+  assert.match(createListing, /photos\.length\+chosen\.length>8/)
+  assert.match(createListing, /Upload at least one photo\. Up to 8 photos, 5 MB each\./)
+  assert.match(paymentService, /listing\.getImageUrls\(\)\.isEmpty\(\)/)
+})
