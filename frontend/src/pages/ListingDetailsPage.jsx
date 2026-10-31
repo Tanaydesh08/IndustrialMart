@@ -170,12 +170,12 @@ export default function ListingDetailsPage() {
   return <section className="section-wrap page-section">
     <Link className="back-link" to="/marketplace"><ArrowLeft size={16}/> {t('Back to marketplace')}</Link>
     <article className="detail-layout"><div className="detail-content">
-      <div className="detail-top"><p className="eyebrow">{t(listing.categorySlug?.replaceAll('-', ' ') || '')}</p><StatusBadge status={listing.status}/></div>
+      {listing.unlockAuthorized&&<div className="detail-top"><p className="eyebrow">{t(listing.categorySlug?.replaceAll('-', ' ') || '')}</p><StatusBadge status={listing.status}/></div>}
       <h1>{listing.title}</h1>
-      {listing.imageUrls?.length ? <div className="detail-gallery">{listing.imageUrls.map(src=><ProtectedImage key={src} src={src} alt={listing.title}/>)}</div> : <div className={`detail-illustration detail-art-${listing.categorySlug || 'default'}`}><span><CategoryIcon slug={listing.categorySlug}/></span></div>}
-      <p className="detail-price">{formatINR(listing.price)}</p>
+      {listing.imageUrls?.length ? <div className="detail-gallery">{(listing.unlockAuthorized ? listing.imageUrls : listing.imageUrls.slice(0, 1)).map(src=><ProtectedImage key={src} src={src} alt={listing.title}/>)}</div> : listing.unlockAuthorized&&<div className={`detail-illustration detail-art-${listing.categorySlug || 'default'}`}><span><CategoryIcon slug={listing.categorySlug}/></span></div>}
+      {listing.unlockAuthorized&&<p className="detail-price">{formatINR(listing.price)}</p>}
       {listing.unlockAuthorized && <><p className="detail-description">{listing.description}</p><dl className="detail-facts"><div><dt>{t('Condition')}</dt><dd>{t(listing.condition)}</dd></div><div><dt>{t('Seller')}</dt><dd>{listing.sellerName}</dd></div><div><dt>{t('Location')}</dt><dd><MapPin size={15}/>{listing.location}</dd></div></dl></>}
-      {user?.role === 'BUYER' && listing.status === 'APPROVED' && !listing.unlockAuthorized && <div className="workflow-card">
+      {user?.role === 'BUYER' && !listing.unlockAuthorized && <div className="workflow-card">
         <p>{t('Seller details become available after payment.')}</p>
         <p className="helper-note">{t('Prototype payment: no real money is charged.')}</p>
         {!payment && <button className="button button-primary" disabled={unlockBusy} onClick={unlock}>{unlockBusy ? t('Payment is processing...') : t('Pay ₹99 to View Details')}</button>}

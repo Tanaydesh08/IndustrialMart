@@ -194,7 +194,7 @@ export const labels = {
   'Go to marketplace': 'Deals par jaayein', 'Use the marketplace to find available industrial listings.': 'Available industrial ads ke liye Deals dekhein.',
   'Sponsored ad updated.': 'Sponsored ad update ho gaya.', 'Sponsored ad created.': 'Sponsored ad ban gaya.',
   'Delete sponsored ad “{title}”?': 'Sponsored ad “{title}” delete karein?', 'Sponsored ad deleted.': 'Sponsored ad delete ho gaya.',
-  'title': 'Title', 'description': 'Description', 'imageUrl': 'Image URL', 'destinationUrl': 'Destination URL',
+  'title': 'Title', 'description': 'Description', 'imageUrl': 'Image URL',
   'startsAt': 'Shuru hone ka samay', 'endsAt': 'Khatam hone ka samay', 'Off': 'Band', 'Create sponsored ad': 'Sponsored ad banayein',
   'Listing #{id} updated.': 'Ad #{id} update ho gaya.', 'Listing #{id} deleted.': 'Ad #{id} delete ho gaya.',
 }

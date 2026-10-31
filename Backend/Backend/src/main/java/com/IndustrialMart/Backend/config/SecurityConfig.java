@@ -112,6 +112,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/health",
+                                "/api/sponsored-ads/active",
+                                "/api/sponsored-ads/images/*",
                                 "/error"
                         ).permitAll()
 

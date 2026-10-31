@@ -3,8 +3,8 @@ import { createSponsoredAd, deleteSponsoredAd, getSponsoredAds, updateSponsoredA
 import { useApp } from '../../context/AppContext'
 import { ErrorState, Notice } from '../common/States'
 
-const blank = { title: '', description: '', imageUrl: '', destinationUrl: '', active: false, startsAt: '', endsAt: '' }
-const fields = ['title', 'description', 'imageUrl', 'destinationUrl', 'startsAt', 'endsAt']
+const blank = { title: '', description: '', imageUrl: '', active: false, startsAt: '', endsAt: '' }
+const fields = ['title', 'description', 'imageUrl', 'startsAt', 'endsAt']
 
 export default function SponsoredAdsAdmin() {
   const { t } = useApp()
@@ -20,7 +20,8 @@ export default function SponsoredAdsAdmin() {
   async function save(event) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('')
     try {
-      const payload = { ...form, startsAt: form.startsAt || null, endsAt: form.endsAt || null }
+      const payload = { title: form.title, description: form.description, imageUrl: form.imageUrl,
+        active: form.active, startsAt: form.startsAt || null, endsAt: form.endsAt || null }
       if (editing) await updateSponsoredAd(editing, payload); else await createSponsoredAd(payload)
       setForm(blank); setEditing(null); setNotice(t(editing ? 'Sponsored ad updated.' : 'Sponsored ad created.')); await load()
     } catch (e) { setError(e.message) } finally { setBusy(false) }
@@ -42,7 +43,7 @@ export default function SponsoredAdsAdmin() {
   }
   return <section className="workflow-card"><h2>{t('Sponsored Ads')}</h2>{notice && <Notice>{notice}</Notice>}{error && <ErrorState message={error} />}
     <form className="form-grid" onSubmit={save}>
-      {fields.map(field => <label className="form-field" key={field}><span>{t(field)}</span><input required={['title', 'imageUrl', 'destinationUrl'].includes(field)} type={field.endsWith('At') ? 'datetime-local' : 'text'} value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} /></label>)}
+      {fields.map(field => <label className="form-field" key={field}><span>{t(field)}</span><input required={['title', 'imageUrl'].includes(field)} type={field.endsWith('At') ? 'datetime-local' : 'text'} value={form[field] || ''} onChange={e => setForm({ ...form, [field]: e.target.value })} /></label>)}
       <label className="form-field"><span>{t('Image upload')}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} />{uploading && <small>{t('Photo upload ho rahi hai…')}</small>}</label>
       <label><input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> {t('Active')}</label>
       <button className="button button-primary" disabled={busy || uploading}>{t(editing ? 'Save changes' : 'Create sponsored ad')}</button>

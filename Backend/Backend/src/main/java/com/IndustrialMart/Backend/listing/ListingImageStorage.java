@@ -65,6 +65,11 @@ public class ListingImageStorage {
         }
     }
 
+    public String storeSponsored(MultipartFile file) {
+        String listingUrl = store(List.of(file)).get(0);
+        return listingUrl.replace(IMAGE_URL_PREFIX, "/api/sponsored-ads/images/");
+    }
+
     public String migrateLegacyFile(String filename) {
         if (filename == null || !filename.matches("[a-zA-Z0-9-]{1,100}\\.(jpg|jpeg|png|webp)")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Legacy photo name is invalid");
