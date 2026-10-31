@@ -97,11 +97,11 @@ public class ListingController {
 
     private void authorizePhoto(User user, String imageUrl) {
         boolean mayView = listingService.getListingsContainingImage(imageUrl).stream().anyMatch(listing ->
-                listing.getStatus() == ListingStatus.APPROVED
-                        || user.getRole() == UserRole.ADMIN
+                user.getRole() == UserRole.ADMIN
                         || user.getRole() == UserRole.SELLER && user.getId().equals(listing.getSellerUserId())
                         || user.getRole() == UserRole.BUYER && listing.getStatus() == ListingStatus.APPROVED
-                        && unlockRepository.existsByAccountIdAndListingId(user.getId(), listing.getId()));
+                        && (listing.getImageUrls().stream().findFirst().filter(imageUrl::equals).isPresent()
+                        || unlockRepository.existsByAccountIdAndListingId(user.getId(), listing.getId())));
         if (!mayView) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo not found");
     }
 

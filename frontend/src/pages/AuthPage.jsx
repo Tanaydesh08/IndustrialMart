@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Factory, ShieldCheck } from 'lucide-react'
 import { login, register } from '../api/authApi'
 import { useApp } from '../context/AppContext'
 import { ErrorState } from '../components/common/States'
 import { useSearchParams } from 'react-router-dom'
-import { getActiveSponsoredAds } from '../api/adminApi'
-import ProtectedImage from '../components/common/ProtectedImage'
+import SponsoredAds from '../components/common/SponsoredAds'
 
 export default function AuthPage({ register: isRegister = false }) {
   const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'BUYER' })
@@ -15,13 +14,6 @@ export default function AuthPage({ register: isRegister = false }) {
   const { signIn, t } = useApp()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [sponsoredAds, setSponsoredAds] = useState([])
-  useEffect(() => {
-    if (isRegister) return
-    let active = true
-    getActiveSponsoredAds().then(ads => { if (active) setSponsoredAds(ads) }).catch(() => {})
-    return () => { active = false }
-  }, [isRegister])
   async function submit(e) {
     e.preventDefault(); setBusy(true); setError('')
     try {
@@ -45,6 +37,6 @@ export default function AuthPage({ register: isRegister = false }) {
       {isRegister&&<label className="form-field"><span>{t('Account type')}</span><select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}><option value="BUYER">{t('Buyer account')}</option><option value="SELLER">{t('Seller account')}</option></select></label>}
       <button className="button button-primary auth-submit" disabled={busy}>{busy?'Please wait…':isRegister?t('Create account'):t('Sign in')}</button>
       <p className="auth-switch">{isRegister?t('Already have an account?'):t('New here?')} <Link to={isRegister?'/login':'/register'}>{isRegister?t('Sign in'):t('Create account')}</Link></p>
-    </form>{!isRegister&&!!sponsoredAds.length&&<section className="sponsored-grid login-sponsored" aria-label={t('Sponsored')}>{sponsoredAds.map(ad=><article className="sponsored-card" key={ad.id}><span>{t('Sponsored')}</span>{ad.imageUrl?.startsWith('/api/sponsored-ads/images/')?<ProtectedImage src={ad.imageUrl} alt={ad.title}/>:<img src={ad.imageUrl} alt={ad.title}/>}<div><h2>{ad.title}</h2>{ad.description&&<p>{ad.description}</p>}</div></article>)}</section>}</div>
+    </form>{!isRegister&&<SponsoredAds className="login-sponsored"/>}</div>
   </section>
 }

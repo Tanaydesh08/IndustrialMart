@@ -215,6 +215,7 @@ body { color:#26332e; background:#f5f4ef; }
 .detail-content>.workflow-card { margin-top:22px; }
 .auth-login-stack { width:100%; display:grid; gap:16px; align-content:center; }
 .login-sponsored { margin:0; grid-template-columns:1fr; }
+.home-sponsored { margin:0; }
 .login-sponsored .sponsored-card { cursor:default; }
 .login-sponsored .sponsored-card:hover { transform:none; box-shadow:none; }
 .login-sponsored .sponsored-card img { height:150px; }
