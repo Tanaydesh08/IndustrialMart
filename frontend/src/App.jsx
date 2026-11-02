@@ -27,7 +27,7 @@ function RoleRoute({ role, children }) {
 
 export default function App() {
   return <BrowserRouter><Routes><Route element={<SiteLayout/>}>
-    <Route path="/" element={<HomePage/>}/>
+    <Route path="/" element={<Authenticated><HomePage/></Authenticated>}/>
     <Route path="/marketplace" element={<Authenticated><MarketplacePage/></Authenticated>}/>
     <Route path="/listings/:id" element={<Authenticated><ListingDetailsPage/></Authenticated>}/>
     <Route path="/seller" element={<RoleRoute role="SELLER"><SellerDashboardPage/></RoleRoute>}/>

@@ -170,7 +170,7 @@ export default function ListingDetailsPage() {
   return <section className="section-wrap page-section">
     <Link className="back-link" to="/marketplace"><ArrowLeft size={16}/> {t('Back to marketplace')}</Link>
     <article className="detail-layout"><div className="detail-content">
-      {listing.unlockAuthorized&&<div className="detail-top"><p className="eyebrow">{t(listing.categorySlug?.replaceAll('-', ' ') || '')}</p><StatusBadge status={listing.status}/></div>}
+      <div className="detail-top"><p className="eyebrow">{t(listing.categorySlug?.replaceAll('-', ' ') || '')}</p>{listing.unlockAuthorized&&<StatusBadge status={listing.status}/>}</div>
       <h1>{listing.title}</h1>
       {listing.imageUrls?.length ? <div className="detail-gallery">{(listing.unlockAuthorized ? listing.imageUrls : listing.imageUrls.slice(0, 1)).map(src=><ProtectedImage key={src} src={src} alt={listing.title}/>)}</div> : listing.unlockAuthorized&&<div className={`detail-illustration detail-art-${listing.categorySlug || 'default'}`}><span><CategoryIcon slug={listing.categorySlug}/></span></div>}
       {listing.unlockAuthorized&&<p className="detail-price">{formatINR(listing.price)}</p>}

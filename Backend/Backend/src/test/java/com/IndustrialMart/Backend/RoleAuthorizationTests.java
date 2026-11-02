@@ -118,6 +118,25 @@ class RoleAuthorizationTests {
     }
 
     @Test
+    void approvedListingPreviewIncludesCategoryWithoutPrivateDetails() throws Exception {
+        User buyer = user(UserRole.BUYER);
+        User seller = user(UserRole.SELLER);
+        Listing approved = listing(seller.getId());
+        approved.setStatus(ListingStatus.APPROVED);
+        approved.setCategorySlug("truck");
+        listings.saveAndFlush(approved);
+
+        mvc.perform(get("/api/listings/{id}", approved.getId())
+                        .header("Authorization", bearer(buyer)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Existing"))
+                .andExpect(jsonPath("$.categorySlug").value("truck"))
+                .andExpect(jsonPath("$.description").doesNotExist())
+                .andExpect(jsonPath("$.price").doesNotExist())
+                .andExpect(jsonPath("$.sellerName").doesNotExist());
+    }
+
+    @Test
     void authenticatedCategoryListPreservesExistingIdsAndTruckSlug() throws Exception {
         User buyer = user(UserRole.BUYER);
         mvc.perform(get("/api/categories").header("Authorization", bearer(buyer)))
