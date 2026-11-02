@@ -123,6 +123,11 @@ class PrototypePaymentServiceTests {
         assertEquals(pendingListing.getId(), payment.getListingId());
         assertEquals(PaymentStatus.SUCCESS, payments.simulatePayment(seller.getId(), payment.getId(), true).getStatus());
         assertEquals(ListingStatus.PENDING_REVIEW, listings.findById(pendingListing.getId()).orElseThrow().getStatus());
+        var repeated = payments.createListingFeePayment(seller.getId(), pendingListing.getId());
+        assertEquals(payment.getId(), repeated.getId());
+        assertEquals(PaymentStatus.SUCCESS, repeated.getStatus());
+        assertEquals(1, transactions.findAll().stream().filter(p -> p.getListingId().equals(pendingListing.getId())
+                && p.getPurpose() == PaymentPurpose.LISTING_FEE && p.getStatus() == PaymentStatus.SUCCESS).count());
         assertThrows(ResponseStatusException.class, () -> payments.createListingFeePayment(buyer.getId(), pendingListing.getId()));
         assertThrows(ResponseStatusException.class, () -> payments.createListingFeePayment(otherBuyer.getId(), pendingListing.getId()));
     }

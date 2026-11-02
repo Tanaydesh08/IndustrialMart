@@ -110,13 +110,12 @@ public class PrototypePaymentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Payment cannot be initiated for this listing status");
         }
+        var successfulPayment = paymentRepository.findFirstByListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(
+                listingId, PaymentPurpose.LISTING_FEE, List.of(PaymentStatus.SUCCESS));
+        if (successfulPayment.isPresent()) return successfulPayment.get();
         if (listing.getImageUrls() == null || listing.getImageUrls().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Upload at least one photo before starting the listing fee payment");
-        }
-        if (paymentRepository.existsByListingIdAndPurposeAndStatus(
-                listingId, PaymentPurpose.LISTING_FEE, PaymentStatus.SUCCESS)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing fee has already been paid");
         }
 
         var pending = paymentRepository.findFirstByListingIdAndPurposeAndStatusInOrderByCreatedAtDesc(

@@ -46,13 +46,21 @@ export default function CreateListingPage() {
         : await createListing(payload)
       setPendingPhotoListing(created)
       created = await uploadListingImages(created.id, photos)
-      setListing(created); setPayment(null); setNotice(t('Listing created. It is pending moderation and is not public yet.'))
+      setListing(created); setPayment(null); setNotice(t('Listing created. Complete the listing fee payment to submit it for approval.'))
       setPendingPhotoListing(null)
     } catch (err) {
       if (created) {
         setPendingPhotoListing(created)
         setNotice(t('Listing is saved. Upload at least one photo before continuing.'))
       }
+      setError(err.message)
+      setBusy(false)
+      return
+    }
+    try {
+      setPayment(await createListingFeePayment(created.id))
+      setNotice(t('Listing fee payment is ready. Complete it to submit the listing for approval.'))
+    } catch (err) {
       setError(err.message)
     }
     finally { setBusy(false) }
@@ -87,7 +95,7 @@ export default function CreateListingPage() {
   }
   const update = e => setForm(current=>({...current,[e.target.name]:e.target.value}))
   return <section className="section-wrap page-section narrow-section">
-    <div className="page-heading"><p className="eyebrow">{t('SELLER WORKFLOW')}</p><h1>{t('Create a listing')}</h1><p>{t('Submit the listing details, then follow its listing-fee payment status.')}</p></div>
+    <div className="page-heading"><p className="eyebrow">{t('SELLER WORKFLOW')}</p><h1>{t('Create a listing')}</h1><p>{t('Upload your listing photos, then complete the listing fee payment to submit it for admin approval. This prototype simulates payment and does not charge real money.')}</p></div>
     {categoriesError&&<ErrorState message={categoriesError} onRetry={()=>getCategories().then(setCategories).catch(err=>setCategoriesError(err.message))}/>}
     {notice&&<Notice>{notice}</Notice>}
     {error&&<ErrorState message={error}/>}
@@ -102,7 +110,7 @@ export default function CreateListingPage() {
       <button className="button button-primary" disabled={busy}>{busy?t('Saving…'):t(pendingPhotoListing?'Retry photo upload':'Naya Ad Daalein')}</button>
     </form>}
     {listing&&<div className="workflow-card"><div className="section-heading"><div><p className="eyebrow">{t('LISTING')} #{listing.id}</p><h2>{listing.title}</h2></div><StatusBadge status={listing.status}/></div><p>{listing.description}</p><p className="listing-price">{formatINR(listing.price)}</p><p className="helper-note">{t('A new listing stays pending review and is not public until approved.')}</p>
-      {!payment&&<button className="button button-primary" disabled={busy} onClick={startFee}>{t('Initiate listing fee')}</button>}
+      {!payment&&<button className="button button-primary" disabled={busy} onClick={startFee}>{busy?t('Preparing listing fee payment...'):t('Start listing fee payment')}</button>}
       {payment&&<div className="payment-box"><div><p className="eyebrow">{t('PAYMENT')} #{payment.id}</p><h3>{formatINR(paiseToRupees(payment.amountPaise))}</h3><StatusBadge status={payment.status}/><p className="helper-note">{t('Simulation only. No payment gateway or real charge is used.')}</p></div>{payment.status==='PENDING'&&<div className="button-row"><button disabled={busy} className="button button-primary" onClick={()=>finishPayment(true)}>{t('Simulate success')}</button><button disabled={busy} className="button button-secondary" onClick={()=>finishPayment(false)}>{t('Simulate failure')}</button></div>}{payment.status==='FAILED'&&<button disabled={busy} className="button button-secondary" onClick={retryFee}>{t('Create a new fee transaction')}</button>}</div>}
       <div className="button-row"><Link className="button button-secondary" to={`/listings/${listing.id}`}>{t('View listing')}</Link><button className="button button-quiet" onClick={startAnotherListing}>{t('Create another')}</button></div>
     </div>}
