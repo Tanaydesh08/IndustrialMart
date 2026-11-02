@@ -20,7 +20,7 @@ export default function AuthPage({ register: isRegister = false }) {
       const session = isRegister ? await register(form) : await login({ email: form.email, password: form.password })
       signIn(session)
       const returnTo = searchParams.get('returnTo')
-      const home = session.role === 'ADMIN' ? '/admin' : session.role === 'SELLER' ? '/seller' : '/buyer'
+      const home = session.role === 'ADMIN' ? '/admin' : session.role === 'SELLER' ? '/seller' : '/'
       const requested = returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : ''
       const allowed = requested.startsWith('/marketplace') || requested.startsWith('/listings/') || session.role === 'ADMIN' && requested.startsWith('/admin') || session.role === 'SELLER' && (requested.startsWith('/seller') || requested.startsWith('/create-listing')) || session.role === 'BUYER' && requested.startsWith('/buyer')
       navigate(allowed ? requested : home, { replace:true })

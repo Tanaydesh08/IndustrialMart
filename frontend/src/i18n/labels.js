@@ -82,6 +82,7 @@ export const labels = {
   'INDUSTRIAL TRADE, MADE SIMPLE': 'Industrial vyapar, aasaan tareeke se', 'Create another': 'Ek aur ad banayein',
   'Initiate listing fee': 'Listing fee payment shuru karein',
   'Start listing fee payment': 'Listing fee payment shuru karein',
+  'Continue to listing fee payment': 'Listing fee payment ke liye aage badhein',
   'Pay or check listing fee': 'Listing fee pay karein ya status dekhein',
   'Listing fee': 'Listing fee',
   'A successful listing fee payment is required before admin approval.': 'Admin approval se pehle listing fee ka safal payment zaroori hai.',

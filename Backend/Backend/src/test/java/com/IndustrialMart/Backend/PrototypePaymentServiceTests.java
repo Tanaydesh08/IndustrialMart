@@ -2,6 +2,7 @@ package com.IndustrialMart.Backend;
 
 import com.IndustrialMart.Backend.listing.Listing;
 import com.IndustrialMart.Backend.listing.ListingRepository;
+import com.IndustrialMart.Backend.listing.ListingService;
 import com.IndustrialMart.Backend.listing.ListingStatus;
 import com.IndustrialMart.Backend.payment.PaymentPurpose;
 import com.IndustrialMart.Backend.payment.PaymentStatus;
@@ -38,6 +39,7 @@ class PrototypePaymentServiceTests {
     @Autowired PrototypePaymentService payments;
     @Autowired BuyerListingUnlockService unlocks;
     @Autowired ListingRepository listings;
+    @Autowired ListingService listingService;
     @Autowired UserRepository users;
     @MockitoSpyBean PaymentRepository transactions;
     @Autowired ListingUnlockRepository entitlements;
@@ -223,6 +225,21 @@ class PrototypePaymentServiceTests {
         assertEquals(0, transactions.findAll().stream()
                 .filter(payment -> pendingListing.getId().equals(payment.getListingId())
                         && payment.getPurpose() == PaymentPurpose.LISTING_FEE).count());
+    }
+
+    @Test
+    void unpaidListingsStayOutOfModerationQueueUntilListingFeeSucceeds() {
+        addPhoto(pendingListing);
+        assertFalse(listingService.getModerationQueue().stream()
+                .anyMatch(listing -> listing.getId().equals(pendingListing.getId())));
+
+        var payment = payments.createListingFeePayment(seller.getId(), pendingListing.getId());
+        assertFalse(listingService.getModerationQueue().stream()
+                .anyMatch(listing -> listing.getId().equals(pendingListing.getId())));
+
+        payments.simulatePayment(seller.getId(), payment.getId(), true);
+        assertTrue(listingService.getModerationQueue().stream()
+                .anyMatch(listing -> listing.getId().equals(pendingListing.getId())));
     }
 
     private Listing saveListing(String title, ListingStatus status, Long ownerId) {

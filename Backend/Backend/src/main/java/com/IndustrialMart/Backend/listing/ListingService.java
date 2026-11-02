@@ -202,7 +202,10 @@ public class ListingService {
                         ListingStatus.PENDING_REVIEW,
                         ListingStatus.NEEDS_REVIEW
                 )
-        );
+        ).stream()
+                .filter(listing -> paymentRepository.existsByListingIdAndPurposeAndStatus(
+                        listing.getId(), PaymentPurpose.LISTING_FEE, PaymentStatus.SUCCESS))
+                .toList();
     }
 
     @Transactional(readOnly = true)

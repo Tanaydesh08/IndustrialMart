@@ -192,6 +192,65 @@ body { color:#26332e; background:#f5f4ef; }
 @keyframes recent-scroll { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .recent-track { animation: none; } .listing-card-clickable { transition: none; } }
 @media (max-width: 700px) { .hot-deals { grid-template-columns: 1fr; } .hot-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .hot-card:last-child { display: none; } }
+
+/* Marketplace listing cards: keep category and title on a clear vertical rhythm. */
+.buyer-listing-card {
+  border-color: #e6e1d7;
+  border-radius: 15px;
+  background: #fffefa;
+  box-shadow: 0 4px 14px rgba(48, 48, 37, .045);
+}
+.buyer-listing-card .listing-art {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  overflow: hidden;
+  background-color: #eee9df;
+}
+.buyer-listing-card .listing-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  transition: transform .28s ease;
+}
+.buyer-listing-card .listing-content {
+  min-height: 91px;
+  padding: 15px 18px 17px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 7px;
+}
+.buyer-listing-card .listing-content .eyebrow {
+  max-width: 100%;
+  margin: 0;
+  color: #9b6946;
+  font-size: 9px;
+  line-height: 1.35;
+  letter-spacing: .13em;
+}
+.buyer-listing-card .listing-content h3 {
+  width: 100%;
+  margin: 0;
+  color: #293b33;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.buyer-listing-card:hover .listing-photo { transform: scale(1.035); }
+.buyer-listing-card:focus-visible { outline-color: #55745f; }
+@media (max-width: 620px) {
+  .buyer-listing-card .listing-content { min-height: 84px; padding: 13px 15px 15px; }
+  .buyer-listing-card .listing-content h3 { font-size: 14px; }
+}
 .sponsored-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 16px; margin: 22px 0; }
 .sponsored-card { position: relative; overflow: hidden; border: 1px solid #ded8ca; border-radius: 12px; background: #fffefa; }
 .sponsored-card>span { position:absolute; top:10px; left:10px; padding:4px 8px; border-radius:20px; background:#fffefa; font-size:11px; font-weight:700; }
@@ -220,3 +279,67 @@ body { color:#26332e; background:#f5f4ef; }
 .login-sponsored .sponsored-card:hover { transform:none; box-shadow:none; }
 .login-sponsored .sponsored-card img { height:150px; }
 @media(max-width:620px) { .buyer-listing-card .listing-art { height:210px; min-height:210px; }.sponsored-card img { height:155px; } }
+
+/* Final marketplace card overrides, after the legacy buyer dashboard rules. */
+.buyer-listing-card .listing-art {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+}
+.buyer-listing-card .listing-art-empty { background-image: url('./assets/industrial-category-sprite.png'); }
+.buyer-listing-card .listing-art-empty.listing-art-truck {
+  background-image: linear-gradient(145deg, #eee8dc, #e4ded1);
+  background-position: center;
+}
+.buyer-listing-card .listing-art > .listing-art-emoji {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  left: auto;
+  top: auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .8);
+  border-radius: 50%;
+  color: #315c49;
+  background: rgba(255, 254, 250, .95);
+  box-shadow: 0 3px 10px rgba(38, 44, 35, .14);
+}
+.buyer-listing-card .listing-art-emoji svg { width: 21px; height: 21px; }
+.buyer-listing-card .listing-content {
+  min-height: 88px;
+  padding: 15px 18px 17px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 7px;
+}
+.buyer-listing-card .listing-content .eyebrow {
+  max-width: 100%;
+  margin: 0;
+  color: #9b6946;
+  font-size: 9px;
+  line-height: 1.35;
+  letter-spacing: .13em;
+}
+.buyer-listing-card .listing-content h3 {
+  width: 100%;
+  margin: 0;
+  color: #293b33;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+@media(max-width:620px) {
+  .buyer-listing-card .listing-art { height: auto; min-height: 0; aspect-ratio: 16 / 10; }
+  .buyer-listing-card .listing-content { min-height: 82px; padding: 13px 15px 15px; }
+}

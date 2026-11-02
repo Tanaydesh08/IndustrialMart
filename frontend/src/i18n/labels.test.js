@@ -54,6 +54,8 @@ test('frontend routes protect every feature area and preserve auth-only entry ro
   const context = await readSource(resolve(sourceRoot, 'context', 'AppContext.jsx'), 'utf8')
   assert.match(context, /im:unauthorized/)
   assert.match(context, /removeItem\('im-user'\)/)
+  const auth = await readSource(resolve(sourceRoot, 'pages', 'AuthPage.jsx'), 'utf8')
+  assert.match(auth, /session\.role === 'SELLER' \? '\/seller' : '\/'/)
 })
 
 test('buyer payment creation and protected details calls use the mapped backend routes', async () => {

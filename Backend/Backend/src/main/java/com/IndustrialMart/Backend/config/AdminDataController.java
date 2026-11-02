@@ -9,10 +9,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 public class AdminDataController {
-    private final ListingRepository listings; private final UserRepository users; private final SponsoredAdRepository ads;
-    public AdminDataController(ListingRepository listings,UserRepository users,SponsoredAdRepository ads){this.listings=listings;this.users=users;this.ads=ads;}
+    private final ListingRepository listings; private final UserRepository users; private final SponsoredAdRepository ads; private final ListingService listingService;
+    public AdminDataController(ListingRepository listings,UserRepository users,SponsoredAdRepository ads,ListingService listingService){this.listings=listings;this.users=users;this.ads=ads;this.listingService=listingService;}
     @GetMapping("/dashboard")
-    public Dashboard dashboard(){return new Dashboard(users.count(),listings.count(),listings.countByStatus(ListingStatus.PENDING_REVIEW),listings.countByStatus(ListingStatus.APPROVED),ads.count());}
+    public Dashboard dashboard(){return new Dashboard(users.count(),listings.count(),listingService.getModerationQueue().size(),listings.countByStatus(ListingStatus.APPROVED),ads.count());}
     @GetMapping("/listings")
     public List<Listing> listings(){return listings.findAll();}
     @GetMapping("/users")
