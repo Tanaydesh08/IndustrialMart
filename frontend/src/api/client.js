@@ -35,7 +35,10 @@ export const apiClient = axios.create({
 apiClient.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401 && !error.config?.url?.includes('/api/auth/')) window.dispatchEvent(new Event('im:unauthorized'))
+    const url = error.config?.url || ''
+    const publicSponsoredResource = url.startsWith('/api/sponsored-ads/active')
+      || url.startsWith('/api/sponsored-ads/images/')
+    if (error.response?.status === 401 && !publicSponsoredResource && !url.includes('/api/auth/')) window.dispatchEvent(new Event('im:unauthorized'))
     return Promise.reject(new ApiError(friendlyMessage(error), error.response?.status || 0, error.code || 'API_ERROR'))
   },
 )
@@ -44,7 +47,10 @@ apiClient.interceptors.request.use(config => {
   let storedUser = null
   try { storedUser = JSON.parse(localStorage.getItem('im-user') || 'null') } catch { /* Ignore malformed cached session data. */ }
   const token = localStorage.getItem('im-token') || storedUser?.token
-  if (token) {
+  const url = config.url || ''
+  const publicSponsoredResource = url.startsWith('/api/sponsored-ads/active')
+    || url.startsWith('/api/sponsored-ads/images/')
+  if (token && !publicSponsoredResource) {
     if (typeof config.headers?.set === 'function') config.headers.set('Authorization', `Bearer ${token}`)
     else config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
   }

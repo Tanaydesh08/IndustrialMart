@@ -78,6 +78,8 @@ export const labels = {
   'Your seller account is used to associate the listing and its fee with you.': 'Ad aur uski fee aapke seller account se judi rahegi.',
   'Active': 'Chalu', 'Cancel': 'Radd karein', 'Image upload': 'Photo upload', 'Photo upload ho rahi hai…': 'Photo upload ho rahi hai…',
   'Sponsored Ads': 'Sponsored ads', 'Save changes': 'Badlav save karein',
+  'Loading sponsored ads...': 'Sponsored ads load ho rahe hain...',
+  'No active sponsored ads right now.': 'Abhi koi sponsored ad active nahi hai.',
   'Connect with buyers and sellers across India’s industrial supply network.': 'India ke industrial buyers aur sellers se judein.',
   'INDUSTRIAL TRADE, MADE SIMPLE': 'Industrial vyapar, aasaan tareeke se', 'Create another': 'Ek aur ad banayein',
   'Initiate listing fee': 'Listing fee payment shuru karein',

@@ -3,7 +3,7 @@ import { createSponsoredAd, deleteSponsoredAd, getSponsoredAds, updateSponsoredA
 import { useApp } from '../../context/AppContext'
 import { ErrorState, Notice } from '../common/States'
 
-const blank = { title: '', description: '', imageUrl: '', active: false, startsAt: '', endsAt: '' }
+const blank = { title: '', description: '', imageUrl: '', active: true, startsAt: '', endsAt: '' }
 const fields = ['title', 'description', 'imageUrl', 'startsAt', 'endsAt']
 
 export default function SponsoredAdsAdmin() {

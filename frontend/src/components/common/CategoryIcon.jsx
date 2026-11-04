@@ -11,6 +11,6 @@ const illustrations = {
 }
 
 export default function CategoryIcon({ slug }) {
-  if (slug === 'truck') return <Truck aria-hidden="true" />
+  if (slug === 'truck') return <span className="category-emoji category-emoji-truck" aria-hidden="true"><Truck /></span>
   return <span className="category-emoji" aria-hidden="true">{illustrations[slug] || '🏭'}</span>
 }
