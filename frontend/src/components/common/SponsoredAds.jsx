@@ -10,8 +10,27 @@ export default function SponsoredAds({ className = '', showEmptyState = false })
   const [error, setError] = useState('')
   useEffect(() => {
     let active = true
-    getActiveSponsoredAds().then(items => { if (active) setAds(items) }).catch(err => { if (active) setError(err.message) }).finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+    let requestId = 0
+    const load = (initial = false) => {
+      const currentRequest = ++requestId
+      if (initial) setLoading(true)
+      setError('')
+      getActiveSponsoredAds()
+        .then(items => { if (active && currentRequest === requestId) setAds(items) })
+        .catch(err => { if (active && currentRequest === requestId) setError(err.message) })
+        .finally(() => { if (active && currentRequest === requestId) setLoading(false) })
+    }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') load()
+    }
+    load(true)
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      active = false
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
   }, [])
 
   if (!ads.length && !showEmptyState) return null

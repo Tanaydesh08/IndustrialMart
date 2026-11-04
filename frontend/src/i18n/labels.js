@@ -80,6 +80,7 @@ export const labels = {
   'Sponsored Ads': 'Sponsored ads', 'Save changes': 'Badlav save karein',
   'Loading sponsored ads...': 'Sponsored ads load ho rahe hain...',
   'No active sponsored ads right now.': 'Abhi koi sponsored ad active nahi hai.',
+  'Only active sponsored ads within their schedule appear on the login page.': 'Login page par sirf chalu sponsored ads, unke tay samay ke dauraan dikhte hain.',
   'Connect with buyers and sellers across India’s industrial supply network.': 'India ke industrial buyers aur sellers se judein.',
   'INDUSTRIAL TRADE, MADE SIMPLE': 'Industrial vyapar, aasaan tareeke se', 'Create another': 'Ek aur ad banayein',
   'Initiate listing fee': 'Listing fee payment shuru karein',

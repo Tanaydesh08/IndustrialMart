@@ -2,10 +2,12 @@ package com.IndustrialMart.Backend.sponsored;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import com.IndustrialMart.Backend.listing.ListingImageStorage;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 
 @RestController
 public class SponsoredAdController {
+    private static final ZoneId MARKET_TIME_ZONE = ZoneId.of("Asia/Kolkata");
     private final SponsoredAdRepository repository;
     private final ListingImageStorage imageStorage;
     public SponsoredAdController(SponsoredAdRepository repository, ListingImageStorage imageStorage){this.repository=repository;this.imageStorage=imageStorage;}
@@ -31,9 +34,12 @@ public class SponsoredAdController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(image.contentType())).body(image.bytes());
     }
     @GetMapping("/api/sponsored-ads/active")
-    public List<SponsoredAdView> active(){return repository.findAllByOrderByIdDesc().stream()
-            .filter(ad->ad.isCurrentlyActive(LocalDateTime.now()))
-            .map(ad->new SponsoredAdView(ad.getId(),ad.getTitle(),ad.getDescription(),ad.getImageUrl())).toList();}
+    public ResponseEntity<List<SponsoredAdView>> active(){
+        List<SponsoredAdView> ads = repository.findAllByOrderByIdDesc().stream()
+            .filter(ad->ad.isCurrentlyActive(LocalDateTime.now(MARKET_TIME_ZONE)))
+            .map(ad->new SponsoredAdView(ad.getId(),ad.getTitle(),ad.getDescription(),ad.getImageUrl())).toList();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ads);
+    }
     @GetMapping("/api/admin/sponsored-ads")
     public List<SponsoredAd> all(){return repository.findAllByOrderByIdDesc();}
     @PostMapping("/api/admin/sponsored-ads") @ResponseStatus(HttpStatus.CREATED)

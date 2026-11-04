@@ -41,7 +41,7 @@ export default function SponsoredAdsAdmin() {
     try { const saved = await uploadSponsoredImage(file); setForm(current => ({ ...current, imageUrl: saved.imageUrl })) }
     catch (e) { setError(e.message) } finally { setUploading(false) }
   }
-  return <section className="workflow-card"><h2>{t('Sponsored Ads')}</h2>{notice && <Notice>{notice}</Notice>}{error && <ErrorState message={error} />}
+  return <section className="workflow-card"><h2>{t('Sponsored Ads')}</h2><p className="helper-note">{t('Only active sponsored ads within their schedule appear on the login page.')}</p>{notice && <Notice>{notice}</Notice>}{error && <ErrorState message={error} />}
     <form className="form-grid" onSubmit={save}>
       {fields.map(field => <label className="form-field" key={field}><span>{t(field)}</span><input required={['title', 'imageUrl'].includes(field)} type={field.endsWith('At') ? 'datetime-local' : 'text'} value={form[field] || ''} onChange={e => setForm({ ...form, [field]: e.target.value })} /></label>)}
       <label className="form-field"><span>{t('Image upload')}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} />{uploading && <small>{t('Photo upload ho rahi hai…')}</small>}</label>
