@@ -51,7 +51,7 @@ export default function MarketplacePage() {
   return <section className="section-wrap page-section">
     <div className="page-heading"><p className="eyebrow">{t('Deals')}</p><h1>{t('Industrial listings')}</h1></div>
     {!!recent.length&&<section className="recent-strip" aria-labelledby="recent-heading"><div className="recent-heading"><div><p className="eyebrow">{t('JUST ADDED')}</p><h2 id="recent-heading">{t('Naye Ads')}</h2></div><p>{t('Find something useful for your mill or workshop.')}</p></div><div className="recent-track">{[0,1].map(copy=><div className={`recent-group${copy?' recent-group-copy':''}`} key={`recent-group-${copy}`} aria-hidden={copy||undefined}>{recent.slice(0,8).map(item=><Link key={`${item.id}-${copy}`} tabIndex={copy?-1:undefined} to={`/listings/${item.id}`} className="recent-item">
-      <div className={`recent-media listing-art-${item.categorySlug||'default'}`}>
+      <div className={`recent-media listing-art-${item.categorySlug||'default'}${item.imageUrls?.[0]?' has-photo':''}`}>
         {item.imageUrls?.[0]?<ProtectedImage className="recent-image" src={item.imageUrls[0]} alt=""/>:<span className="recent-fallback" aria-hidden="true"><CategoryIcon slug={item.categorySlug}/></span>}
         <span className="recent-chip">{t('NEW')}</span>
       </div>
