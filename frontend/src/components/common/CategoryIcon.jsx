@@ -1,5 +1,3 @@
-﻿import { Truck } from 'lucide-react'
-
 const illustrations = {
   'rice-milling-machinery': '⚙️',
   'complete-rice-mill-plants': '🏭',
@@ -11,6 +9,6 @@ const illustrations = {
 }
 
 export default function CategoryIcon({ slug }) {
-  if (slug === 'truck') return <span className="category-emoji category-emoji-truck" aria-hidden="true"><Truck /></span>
+  if (slug === 'truck') return <span className="category-emoji category-emoji-truck" aria-hidden="true">🚚</span>
   return <span className="category-emoji" aria-hidden="true">{illustrations[slug] || '🏭'}</span>
 }

@@ -289,8 +289,11 @@ body { color:#26332e; background:#f5f4ef; }
 }
 .buyer-listing-card .listing-art-empty { background-image: url('./assets/industrial-category-sprite.png'); }
 .buyer-listing-card .listing-art-empty.listing-art-truck {
-  background-image: linear-gradient(145deg, #eee8dc, #e4ded1);
+  background-image: url('./assets/truck-category.png');
   background-position: center;
+  background-size: auto 100%;
+  background-repeat: no-repeat;
+  background-color: #e3e8dc;
 }
 .buyer-listing-card .listing-art > .listing-art-emoji {
   position: absolute;
@@ -440,6 +443,9 @@ body { color:#26332e; background:#f5f4ef; }
 }
 .recent-media.listing-art-truck::before { display: none; }
 .recent-image { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; display: block; object-fit: cover; }
+.recent-item img.recent-image { width: 100%; height: 100%; }
+.recent-media.listing-art-truck { background-image: url('./assets/truck-category.png'); background-position: center; background-size: cover; }
+.recent-media.listing-art-truck .recent-image { object-fit: contain; }
 .recent-fallback {
   z-index: 1;
   width: 42px;
@@ -476,11 +482,12 @@ body { color:#26332e; background:#f5f4ef; }
 .category-icon.category-icon-art.category-icon-truck {
   display: grid;
   place-items: center;
-  background-image: linear-gradient(145deg, #e3e8dc, #f1ece0 58%, #d5ded2);
+  background-image: url('./assets/truck-category.png');
+  background-position: center;
+  background-size: cover;
 }
 .category-icon.category-icon-art.category-icon-truck::before { display: none; }
-.category-icon.category-icon-art.category-icon-truck .category-emoji { font-size: 17px; }
-.category-icon.category-icon-art.category-icon-truck .category-emoji svg { width: 20px; height: 20px; }
+.category-icon.category-icon-art.category-icon-truck .category-emoji-truck { right: 8px; bottom: 8px; left: auto; font-size: 19px; }
 @media (max-width: 700px) {
   .recent-strip { margin: 19px 0 25px; padding: 16px 14px 12px; border-radius: 14px; }
   .recent-heading { margin: 0 2px 12px; align-items: flex-start; flex-direction: column; gap: 4px; }
