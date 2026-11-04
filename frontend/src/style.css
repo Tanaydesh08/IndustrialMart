@@ -343,3 +343,179 @@ body { color:#26332e; background:#f5f4ef; }
   .buyer-listing-card .listing-art { height: auto; min-height: 0; aspect-ratio: 16 / 10; }
   .buyer-listing-card .listing-content { min-height: 82px; padding: 13px 15px 15px; }
 }
+
+/* Recent listings are image-led cards inside a touch-scrollable rail. */
+.recent-strip {
+  margin: 24px 0 32px;
+  padding: 22px;
+  border: 1px solid #e4ded3;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fffefa, #f8f5ed);
+  box-shadow: 0 8px 24px rgba(47, 53, 43, .045);
+}
+.recent-heading {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.recent-heading .eyebrow { margin-bottom: 5px; }
+.recent-heading h2 { margin: 0; color: #293b33; font-size: 23px; letter-spacing: -.035em; }
+.recent-heading > p { margin: 0 0 2px; color: #758174; font-size: 12px; }
+.recent-track {
+  width: 100%;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(230px, 23vw, 280px);
+  gap: 13px;
+  overflow-x: auto;
+  padding: 2px 2px 10px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #c9c3b6 transparent;
+  animation: none;
+}
+.recent-item {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e8e2d7;
+  border-radius: 13px;
+  background: #fffefa;
+  box-shadow: 0 3px 11px rgba(45, 51, 41, .04);
+  scroll-snap-align: start;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.recent-item:hover {
+  transform: translateY(-2px);
+  border-color: #b9c8b7;
+  box-shadow: 0 10px 22px rgba(45, 67, 51, .11);
+}
+.recent-item:focus-visible { outline: 3px solid #718d72; outline-offset: 3px; }
+.recent-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background-color: #eee8dc;
+  background-image: linear-gradient(145deg, #f0ede5, #e5e0d5);
+}
+.recent-media::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: auto;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  background-image: url('./assets/industrial-category-sprite.png');
+  background-size: 300% 300%;
+  background-position: inherit;
+  background-repeat: no-repeat;
+}
+.recent-media.listing-art-truck::before { display: none; }
+.recent-image { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; display: block; object-fit: cover; }
+.recent-fallback {
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 50%;
+  color: #315c49;
+  background: rgba(255,254,250,.94);
+  box-shadow: 0 3px 10px rgba(38,44,35,.14);
+}
+.recent-fallback svg { width: 22px; height: 22px; }
+.recent-chip {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  z-index: 2;
+  padding: 5px 8px;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 999px;
+  color: #315c49;
+  background: rgba(255,254,250,.94);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.recent-info { min-height: 103px; padding: 13px 15px 14px; display: flex; flex-direction: column; align-items: flex-start; }
+.recent-info .eyebrow { margin: 0 0 6px; color: #9b6946; font-size: 8px; line-height: 1.4; letter-spacing: .1em; }
+.recent-info h3 { width: 100%; margin: 0; color: #293b33; font-size: 14px; font-weight: 680; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.recent-open { margin-top: auto; padding-top: 9px; display: inline-flex; align-items: center; gap: 5px; color: #426b52; font-size: 11px; font-weight: 700; }
+.seller-listing-actions { margin: -5px 0 19px; display: flex; justify-content: flex-end; }
+.category-icon.category-icon-art.category-icon-truck {
+  display: grid;
+  place-items: center;
+  background-image: linear-gradient(145deg, #e3e8dc, #f1ece0 58%, #d5ded2);
+}
+.category-icon.category-icon-art.category-icon-truck > svg {
+  width: 48px;
+  height: 48px;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 15px;
+  color: #315c49;
+  background: rgba(255,254,250,.88);
+  box-shadow: 0 6px 16px rgba(38,55,42,.12);
+}
+@media (max-width: 700px) {
+  .recent-strip { margin: 19px 0 25px; padding: 16px 14px 12px; border-radius: 14px; }
+  .recent-heading { margin: 0 2px 12px; align-items: flex-start; flex-direction: column; gap: 4px; }
+  .recent-heading h2 { font-size: 20px; }
+  .recent-heading > p { font-size: 11px; }
+  .recent-track { grid-auto-columns: min(78vw, 290px); gap: 11px; margin-right: -14px; padding-right: 14px; }
+  .recent-info { min-height: 96px; }
+  .seller-listing-actions { margin: -5px 0 15px; justify-content: stretch; }
+  .seller-listing-actions .button { width: 100%; min-height: 46px; }
+}
+@media (prefers-reduced-motion: reduce) { .recent-item { transition: none; } }
+
+/* Use square crops from the category sprite so wide cards never stretch artwork. */
+.category-icon.category-icon-art {
+  background-image: linear-gradient(145deg, #f0ede5, #e5e0d5);
+}
+.category-icon.category-icon-art::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: auto;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  background-image: url('./assets/industrial-category-sprite.png');
+  background-size: 300% 300%;
+  background-position: inherit;
+  background-repeat: no-repeat;
+}
+.category-icon.category-icon-art.category-icon-truck::before { display: none; }
+.buyer-listing-card .listing-art-empty {
+  background-image: linear-gradient(145deg, #f0ede5, #e5e0d5);
+}
+.buyer-listing-card .listing-art-empty::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: auto;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  background-image: url('./assets/industrial-category-sprite.png');
+  background-size: 300% 300%;
+  background-position: inherit;
+  background-repeat: no-repeat;
+}
+.buyer-listing-card .listing-art-empty.listing-art-truck::before { display: none; }
+.recent-media::before { z-index: 0; }
+.recent-image { z-index: 1; }

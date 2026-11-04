@@ -48,6 +48,7 @@ export default function SellerDashboardPage() {
 
   return <section className="section-wrap page-section">
     <div className="page-heading"><p className="eyebrow">{t('SELLER SPACE')}</p><h1>{t('My Ads')}</h1><p>{t('Start a listing and follow its payment and moderation status.')}</p></div>
+    <div className="seller-listing-actions"><Link className="button button-primary" to="/create-listing"><Plus size={17} /> {t('Post an Ad')}</Link></div>
     {paymentError && <ErrorState message={paymentError}/>}
     {loading ? <LoadingState label={t('Loading listings...')} /> : error ? <ErrorState message={error} onRetry={load} /> : listings.length ? <div className="moderation-list">{listings.map(item => {
       const payment = payments[item.id]
@@ -66,6 +67,5 @@ export default function SellerDashboardPage() {
         <Link className="button button-secondary" to={`/listings/${item.id}`}>{t('View Details')}</Link>
       </article>
     })}</div> : <EmptyState title={t('No listings yet')} description={t('Create an ad and follow payment and moderation status here.')} />}
-    <Link className="button button-primary" to="/create-listing"><Plus size={17} /> {t('Post an Ad')}</Link>
   </section>
 }
