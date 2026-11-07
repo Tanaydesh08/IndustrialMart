@@ -5,7 +5,7 @@ const Context = createContext(null)
 export function AppProvider({ children }) {
   const [language, setLanguage] = useState(() => localStorage.getItem('im-language') || 'en')
   const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('im-user') || 'null') } catch { return null } })
-  useEffect(() => { document.documentElement.lang = language === 'hi' ? 'hi-Latn' : 'en' }, [language])
+  useEffect(() => { document.documentElement.lang = language === 'hi' ? 'hi-Deva' : 'en' }, [language])
   useEffect(() => {
     const expire = () => { localStorage.removeItem('im-user'); localStorage.removeItem('im-token'); setUser(null); window.location.assign('/login') }
     window.addEventListener('im:unauthorized', expire)
